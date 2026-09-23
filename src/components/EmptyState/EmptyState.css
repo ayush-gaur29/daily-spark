@@ -11,8 +11,8 @@
   width: 3.5rem;
   height: 3.5rem;
   border-radius: var(--radius-full);
-  background-color: var(--color-surface-container-high);
-  color: var(--color-outline);
+  background-color: var(--color-surface-container);
+  color: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -28,7 +28,7 @@
 }
 
 .empty-state-desc {
-  font-size: 13px;
+  font-size: 13.5px;
   line-height: 20px;
   color: var(--color-on-surface-variant);
   max-width: 280px;
@@ -39,14 +39,13 @@
   padding: 0.6rem 1.25rem;
   border-radius: var(--radius-full);
   background-color: var(--color-primary-container);
-  color: var(--color-on-primary-container);
-  font-size: 12px;
+  color: var(--color-on-primary);
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.04em;
   transition: all var(--transition-fast);
 }
 
 .empty-state-action-btn:hover {
-  background-color: var(--color-primary);
+  background-color: var(--color-primary-interactive);
   transform: scale(1.02);
 }

@@ -4,14 +4,15 @@ import { INITIAL_SPARKS } from '../data/sparks';
 const AudioContext = createContext();
 
 export const AudioProvider = ({ children }) => {
-  // Default to today's spark so there is an active spark ready to listen
+  // Default to today's spark ("The Architecture of Quiet Clarity")
   const [currentTrack, setCurrentTrack] = useState(INITIAL_SPARKS[0]);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
+  // Default 102 seconds (01:42) to match reference screenshot initial state
+  const [currentTime, setCurrentTime] = useState(102);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const timerRef = useRef(null);
 
-  const duration = currentTrack?.audioDuration || 185;
+  const duration = currentTrack?.audioDuration || 255;
 
   useEffect(() => {
     if (isPlaying) {
@@ -37,7 +38,7 @@ export const AudioProvider = ({ children }) => {
   const playTrack = (spark) => {
     if (!spark) return;
     if (currentTrack?.id === spark.id) {
-      if (currentTime >= (spark.audioDuration || 185)) {
+      if (currentTime >= (spark.audioDuration || 255)) {
         setCurrentTime(0);
         setIsPlaying(true);
       } else {
@@ -78,7 +79,12 @@ export const AudioProvider = ({ children }) => {
   const formatTime = (secs) => {
     const minutes = Math.floor(secs / 60);
     const seconds = Math.floor(secs % 60);
-    return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+    return `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+  };
+
+  const formatTimeRemaining = (cur, tot) => {
+    const rem = Math.max(0, (tot || duration) - (cur || currentTime));
+    return `-${formatTime(rem)}`;
   };
 
   return (
@@ -94,7 +100,8 @@ export const AudioProvider = ({ children }) => {
         seek,
         skip,
         cycleSpeed,
-        formatTime
+        formatTime,
+        formatTimeRemaining
       }}
     >
       {children}

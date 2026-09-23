@@ -1,0 +1,232 @@
+/* Stitch Visual System — Video Player */
+
+.stitch-video-player-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background-color: #0F172A;
+  box-shadow: 0 4px 16px rgba(0, 40, 142, 0.08);
+  border: 1px solid var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stitch-video-player-container.hero {
+  border-radius: var(--radius-xl);
+  box-shadow: 0 6px 20px rgba(0, 40, 142, 0.12);
+}
+
+.stitch-video-player-container.compact {
+  border-radius: var(--radius-md);
+}
+
+.stitch-video-element {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Big Poster Play Overlay */
+.stitch-video-poster-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.6) 0%, rgba(15, 23, 42, 0.2) 60%, transparent 100%);
+  cursor: pointer;
+  z-index: 5;
+  transition: background-color var(--transition-fast);
+}
+
+.stitch-video-poster-overlay:hover {
+  background-color: rgba(15, 23, 42, 0.35);
+}
+
+.stitch-video-big-play-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary-container);
+  color: var(--color-on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 20px rgba(30, 64, 175, 0.45);
+  transition: transform var(--transition-fast), background-color var(--transition-fast);
+  padding-left: 3px; /* visual center for play triangle */
+}
+
+.stitch-video-big-play-btn:hover {
+  transform: scale(1.08);
+  background-color: #173bab;
+}
+
+.stitch-video-duration-tag {
+  position: absolute;
+  bottom: 0.75rem;
+  right: 0.75rem;
+  background-color: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  color: var(--color-primary-container);
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Controls Bar Overlay */
+.stitch-video-controls-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding: 0.5rem 0.75rem;
+  background: linear-gradient(to top, rgba(15, 23, 42, 0.85) 0%, rgba(15, 23, 42, 0.4) 75%, transparent 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  transition: opacity var(--transition-normal), transform var(--transition-normal);
+}
+
+.stitch-video-controls-bar.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.stitch-video-controls-bar.hidden {
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+}
+
+/* Scrubber Progress Bar */
+.stitch-video-scrubber-wrap {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.stitch-video-seek-input {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: var(--radius-full);
+  outline: none;
+  cursor: pointer;
+  transition: height var(--transition-fast);
+}
+
+.stitch-video-seek-input:hover {
+  height: 6px;
+}
+
+.stitch-video-seek-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 13px;
+  height: 13px;
+  border-radius: var(--radius-full);
+  background-color: #ffffff;
+  border: 2px solid var(--color-primary-container);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  transition: transform var(--transition-fast);
+}
+
+.stitch-video-seek-input::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+}
+
+.stitch-video-seek-input::-moz-range-thumb {
+  width: 13px;
+  height: 13px;
+  border-radius: var(--radius-full);
+  background-color: #ffffff;
+  border: 2px solid var(--color-primary-container);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+/* Controls Buttons Row */
+.stitch-video-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.stitch-video-controls-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stitch-video-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stitch-video-ctrl-btn {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: background-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.stitch-video-ctrl-btn:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.stitch-video-ctrl-btn:active {
+  transform: scale(0.92);
+}
+
+.stitch-video-time-display {
+  color: #ffffff;
+  font-feature-settings: 'tnum';
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 11.5px;
+  font-weight: 500;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.stitch-video-time-divider {
+  opacity: 0.7;
+}
+
+/* Mobile Touch Optimization */
+@media (max-width: 480px) {
+  .stitch-video-big-play-btn {
+    width: 52px;
+    height: 52px;
+  }
+
+  .stitch-video-ctrl-btn {
+    width: 36px;
+    height: 36px;
+  }
+}
+

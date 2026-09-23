@@ -1,6 +1,6 @@
 .toast-wrapper {
   position: fixed;
-  top: calc(env(safe-area-inset-top, 0px) + 5.25rem);
+  top: calc(env(safe-area-inset-top, 0px) + 4.75rem);
   left: 50%;
   transform: translateX(-50%);
   z-index: 999;
@@ -10,9 +10,9 @@
 }
 
 .toast-pill {
-  background-color: var(--color-surface-container-high);
-  border: 1px solid rgba(229, 169, 90, 0.35);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  background-color: var(--color-surface-container-lowest);
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: 0 4px 20px rgba(0, 40, 142, 0.12);
   border-radius: var(--radius-full);
   padding: 0.6rem 1rem;
   display: flex;
@@ -22,7 +22,7 @@
   color: var(--color-on-surface);
   font-size: 13px;
   font-weight: 500;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
 }
 
 .toast-spark-icon {

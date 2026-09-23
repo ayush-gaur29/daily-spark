@@ -3,11 +3,42 @@ import { INITIAL_SPARKS } from '../data/sparks';
 
 const SparksContext = createContext();
 
+const SCHEMA_VERSION = 'v2.3';
+
 export const SparksProvider = ({ children }) => {
   const [sparks, setSparks] = useState(() => {
     try {
+      const version = localStorage.getItem('daily_spark_schema_version');
       const stored = localStorage.getItem('daily_spark_items');
-      return stored ? JSON.parse(stored) : INITIAL_SPARKS;
+
+      if (version === SCHEMA_VERSION && stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+
+      // Upgrade/migrate while preserving saved state
+      let savedIds = new Set();
+      if (stored) {
+        try {
+          const oldItems = JSON.parse(stored);
+          if (Array.isArray(oldItems)) {
+            oldItems.filter((i) => i.saved).forEach((i) => savedIds.add(i.id));
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      const freshSparks = INITIAL_SPARKS.map((s) => ({
+        ...s,
+        saved: savedIds.has(s.id) ? true : s.saved
+      }));
+
+      localStorage.setItem('daily_spark_schema_version', SCHEMA_VERSION);
+      localStorage.setItem('daily_spark_items', JSON.stringify(freshSparks));
+      return freshSparks;
     } catch {
       return INITIAL_SPARKS;
     }

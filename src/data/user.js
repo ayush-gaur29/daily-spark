@@ -1,19 +1,25 @@
 export const INITIAL_USER = {
-  name: 'Marcus',
-  email: 'marcus.vance@reflection.app',
-  avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDtav5fSQwweHBPx4r71nE00tCcCdzrfZ4uNfpBwxCURfIi4Qyj6hSHTtX5s8gYozYorM0wBdgYYOB2abaFn0url4cpEssKYmmflzKF7LThZcPWLRVYigWYE4wUMqal2xqh5LlvCoI0goCNDbYKlp1Ddg7tUV74KZOB2FvDR8lzP3GXvsGi9Zeiua22Tv_rWWF1TcYmd6grQLXiEavk3fmfJsAiGMmtz89hafOf8eos-rqyqPj3cHtT',
-  membership: 'Dr. Cubie Inspiration Premium',
+  name: 'David Vance',
+  firstName: 'David',
+  email: 'david.vance@example.com',
+  // Canonical David Vance portrait - unified across Header and Profile
+  avatar: '/assets/images/avatar-david-vance.jpg',
+  avatarLarge: '/assets/images/avatar-david-vance.jpg',
+  avatarFallback: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAqPWDyhp0FylJnm0ctJpT_rn3BR6Lxaz9lemUY0rA0lvhoI-r_YSLv5WeB8hZOR-4iosovUhubOIXzD406BUZf9lWB0_BCcfOtjWKYXjEfMeNEn1b-Myms0ix3uwyD_ljIX-OJ2ZOjfED8oyJvjc319usMe6mkff-8fG5jYrTXsO8UjcWHDx60twiM4tWv-DjtawHuIXcgK6wWJmISTTHJbk1xrCvNDNRQn8PRyefEmJGHrg4XlF5ZRg',
+  membership: 'VIP Pass Member • Renews Dec 2024',
   memberSince: 'October 2024',
-  streakDays: 14,
-  totalListenedMinutes: 128,
-  sparksExploredCount: 42,
+  streakDays: 24,
+  sparksDone: 18,
+  mindfulAudioHours: '4.2h',
   preferences: {
-    dailyReminder: true,
-    reminderTime: '07:30 AM',
-    notifications: true,
-    audioVoice: 'Warm Contemplative (Marcus)',
-    playbackSpeedDefault: '1x',
-    hapticFeedback: true,
-    appearance: 'Atmospheric Dark'
+    dailyDeliveryTime: '7:00 AM',
+    deliveryTimeLabel: 'Morning quiet window',
+    audioSpeed: '1.0x',
+    speedLabel: 'Reflective pacing',
+    preferredTopics: 'Leadership, Mindfulness',
+    vipStatus: 'Active',
+    vipRenewal: 'Renews Dec 18, 2024',
+    offlineStorage: '1.2 GB stored offline',
+    notificationSettings: 'Reminders & Weekly Digests'
   }
 };

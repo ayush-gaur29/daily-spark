@@ -95,6 +95,7 @@ export const App = () => {
             <Header
               onNavigate={navigateTo}
               currentRoute={route}
+              onBack={handleBack}
               onOpenNotifications={() => setIsNotifOpen(true)}
               unreadCount={unreadCount}
             />
@@ -111,6 +112,7 @@ export const App = () => {
                 <Saved
                   onNavigateToSpark={navigateToSpark}
                   onNavigateToToday={() => navigateTo('today')}
+                  onNavigateToVip={() => navigateTo('vip-pass')}
                 />
               )}
 

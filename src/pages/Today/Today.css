@@ -1,373 +1,296 @@
-.today-page {
+/* Today Screen — Stitch Serene Intellectual Design */
+
+.today-screen {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1.5rem;
+  width: 100%;
   padding-bottom: 1.5rem;
 }
 
-/* Greeting Header */
-.today-context-header {
+/* 1. Greeting Block */
+.today-greeting-block {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.5rem;
+}
+
+.today-greeting-text {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
 }
 
-.today-greeting-label {
-  font-family: var(--font-ui);
-  font-size: 22px;
-  line-height: 28px;
-  font-weight: 600;
-  letter-spacing: 0.03em;
+.today-date-eyebrow {
+  color: var(--color-secondary);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-primary);
-  margin: 0 0 0.2rem 0;
+  margin-bottom: 0.25rem;
 }
 
-.today-date-text {
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 400;
-  color: var(--color-on-surface-variant);
-  margin: 0;
-  opacity: 0.85;
-}
-
-@media (max-width: 360px) {
-  .today-greeting-label {
-    font-size: 18px;
-    line-height: 24px;
-    letter-spacing: 0.02em;
-  }
-  .today-date-text {
-    font-size: 13px;
-  }
-}
-
-/* 1. PRIMARY: Featured Daily Spark */
-.today-spark-hero {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.today-spark-eyebrow {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-outline);
-}
-
-.today-spark-title {
-  font-family: var(--font-editorial);
-  font-size: 32px;
-  line-height: 38px;
-  font-weight: 400;
+.today-user-greeting {
   color: var(--color-on-surface);
   letter-spacing: -0.01em;
 }
 
-.today-spark-subtitle {
-  font-family: var(--font-editorial);
-  font-size: 18px;
-  line-height: 26px;
-  font-weight: 400;
-  color: var(--color-primary);
-  opacity: 0.95;
-}
-
-.today-spark-description {
-  font-size: 14px;
-  line-height: 22px;
-  color: var(--color-on-surface-variant);
-  margin-top: 0.25rem;
-}
-
-/* Primary Reflect Editorial Card */
-.today-reflect-card {
+.today-sun-badge {
   position: relative;
-  background: linear-gradient(180deg, var(--color-surface-container-low) 0%, rgba(20, 24, 32, 0.95) 100%);
-  border: 1px solid var(--color-border-card);
-  border-radius: var(--radius-2xl);
-  padding: 1.75rem 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.25rem;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
-}
-
-.today-reflect-badge {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--color-primary);
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-container-high);
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  justify-content: center;
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
 }
 
-.today-reflect-quote {
-  font-family: var(--font-editorial);
-  font-size: 24px;
-  line-height: 34px;
-  font-style: italic;
-  font-weight: 400;
+.today-sun-dot {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-tint);
+  border: 2px solid var(--color-surface);
+}
+
+/* 2. Today's Spark Hero Card */
+.today-hero-card {
+  position: relative;
+  border-radius: var(--radius-xl);
+  background-color: var(--color-surface-container-low);
+  box-shadow: 0 2px 10px rgba(0, 40, 142, 0.04);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.today-hero-media {
+  position: relative;
+  height: 11.5rem;
+  width: 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.today-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--transition-normal);
+}
+
+.today-hero-media:hover .today-hero-img {
+  transform: scale(1.02);
+}
+
+.today-hero-gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(19, 27, 46, 0.85) 0%, rgba(19, 27, 46, 0.3) 60%, transparent 100%);
+}
+
+.today-hero-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-container-high);
+  color: var(--color-primary-container);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+}
+
+.today-hero-title {
   color: var(--color-on-surface);
+  line-height: 1.25;
+  transition: color var(--transition-fast);
 }
 
-.today-reflect-preview {
-  font-size: 14px;
-  line-height: 22px;
+.today-hero-title:hover {
+  color: var(--color-primary);
+}
+
+.today-hero-subtitle {
   color: var(--color-on-surface-variant);
+  line-height: 1.5;
 }
 
-.today-actions-row {
+.today-video-wrap {
+  width: 100%;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.today-audio-wrap {
+  width: 100%;
+}
+
+/* 3. Editorial Reflection / Quote Block */
+.today-quote-card {
+  position: relative;
+  border-radius: var(--radius-xl);
+  background-color: var(--color-surface-container);
+  padding: 1.5rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 40, 142, 0.04);
+}
+
+.today-quote-watermark {
+  position: absolute;
+  top: 0.75rem;
+  right: 1rem;
+  font-size: 64px !important;
+  color: rgba(184, 196, 255, 0.4);
+  pointer-events: none;
+  user-select: none;
+}
+
+.today-quote-text {
+  position: relative;
+  z-index: 2;
+  color: var(--color-on-surface);
+  font-style: italic;
+  margin-bottom: 0.75rem;
+  line-height: 1.55;
+}
+
+.today-quote-bottom-row {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-top: 0.25rem;
+}
+
+.today-quote-author {
+  font-style: normal;
+  color: var(--color-primary-container);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.today-quote-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.today-quote-action-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-secondary);
+  transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.today-quote-action-btn:hover {
+  color: var(--color-primary);
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+.today-quote-action-btn.saved {
+  color: var(--color-primary);
+}
+
+/* 4. Concise Insight & Practice Section */
+.today-insight-card {
+  border-radius: var(--radius-xl);
+  background-color: var(--color-surface-container-lowest);
+  padding: 1.25rem;
+  box-shadow: 0 2px 10px rgba(0, 40, 142, 0.04);
+  border: 1px solid var(--color-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.today-takeaway-row {
+  display: flex;
+  align-items: flex-start;
   gap: 0.75rem;
+}
+
+.today-takeaway-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-surface-container);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.today-takeaway-icon-box.insight {
+  color: var(--color-primary);
+}
+
+.today-takeaway-icon-box.practice {
+  color: var(--color-secondary);
+}
+
+.today-takeaway-content {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.5;
+}
+
+.today-takeaway-label {
+  color: var(--color-on-surface);
+  font-weight: 700;
+}
+
+.today-takeaway-desc {
+  color: var(--color-on-surface-variant);
+}
+
+.today-full-reflection-btn-wrap {
   padding-top: 0.5rem;
 }
 
 .today-read-cta-btn {
-  flex: 1;
-  height: 50px;
+  width: 100%;
+  padding: 0.8rem 1rem;
   border-radius: var(--radius-full);
-  background: var(--color-primary-container);
-  color: var(--color-on-primary-container);
-  font-size: 13.5px;
+  background-color: var(--color-primary-container);
+  color: var(--color-on-primary);
   font-weight: 600;
-  letter-spacing: 0.02em;
+  font-size: 13.5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  box-shadow: 0 4px 20px rgba(229, 169, 90, 0.2);
+  gap: 0.35rem;
+  box-shadow: 0 4px 12px rgba(0, 40, 142, 0.16);
   transition: all var(--transition-fast);
-}
-
-.today-read-cta-btn:hover {
-  background: var(--color-primary);
-  transform: translateY(-1px);
 }
 
 .today-read-cta-btn:active {
+  background-color: var(--color-primary-interactive);
   transform: scale(0.98);
 }
 
-.today-secondary-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.today-icon-btn {
-  width: 50px;
-  height: 50px;
-  border-radius: var(--radius-full);
-  background-color: var(--color-surface-container);
-  border: 1px solid var(--color-border-card);
-  color: var(--color-on-surface-variant);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all var(--transition-fast);
-}
-
-.today-icon-btn:hover {
-  background-color: var(--color-surface-container-high);
-  color: var(--color-on-surface);
-}
-
-.today-icon-btn.saved {
-  color: var(--color-primary);
-  border-color: rgba(229, 169, 90, 0.35);
-}
-
-/* 2. SECONDARY: Core Insight, Prompt & Practice (Single Calm Unified Card) */
-.today-secondary-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.today-section-heading {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--color-outline);
-  padding-left: 0.25rem;
-}
-
-.today-unified-insight-card {
-  background-color: var(--color-surface-container-low);
-  border: 1px solid var(--color-border-card);
-  border-radius: var(--radius-xl);
-  padding: 1.25rem 1.35rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.today-insight-block {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.today-insight-label-row {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.today-insight-label-icon {
-  font-size: 16px;
-  color: var(--color-primary);
-}
-
-.today-insight-label {
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-primary);
-}
-
-.today-insight-text {
-  font-size: 13.5px;
-  line-height: 20px;
-  color: var(--color-on-surface);
-  margin: 0;
-}
-
-.today-prompt-text {
-  font-family: var(--font-editorial);
-  font-style: italic;
-  font-size: 15px;
-  line-height: 22px;
-  color: var(--color-on-surface);
-  margin: 0;
-}
-
-.today-practice-text {
-  font-size: 13.5px;
-  line-height: 20px;
-  color: var(--color-on-surface-variant);
-  margin: 0;
-}
-
-.today-card-divider {
-  height: 1px;
-  background-color: var(--color-border-card);
-  opacity: 0.7;
-}
-
-/* 3. TERTIARY: Continue Listening (Compact Strip) */
-.today-continue-strip {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-  background-color: var(--color-surface-container-low);
-  border: 1px solid var(--color-border-card);
-  border-radius: var(--radius-lg);
-  padding: 0.75rem 1rem;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.today-continue-strip:hover {
-  background-color: #1e2228;
-  border-color: rgba(229, 169, 90, 0.25);
-}
-
-.today-continue-play-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-full);
-  background-color: var(--color-primary-container);
-  color: var(--color-on-primary-container);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: transform var(--transition-fast);
-}
-
-.today-continue-play-btn:hover {
-  transform: scale(1.06);
-}
-
-.today-continue-play-btn.playing {
-  background-color: var(--color-primary);
-  box-shadow: 0 0 12px rgba(229, 169, 90, 0.35);
-}
-
-.today-continue-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  flex: 1;
-  min-width: 0;
-}
-
-.today-continue-header-line {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.today-continue-tag {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-primary);
-}
-
-.today-continue-time {
-  font-size: 11px;
-  color: var(--color-outline);
-  font-weight: 500;
-}
-
-.today-continue-title {
-  font-family: var(--font-editorial);
-  font-size: 14.5px;
-  line-height: 19px;
-  color: var(--color-on-surface);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.today-continue-bar {
-  height: 3px;
-  border-radius: var(--radius-full);
-  background-color: var(--color-surface-container-high);
-  overflow: hidden;
-  margin-top: 2px;
-}
-
-.today-continue-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #d49742, #ffc67d);
-  border-radius: var(--radius-full);
-}
-
-.today-continue-chevron {
-  font-size: 18px;
-  color: var(--color-outline);
-  flex-shrink: 0;
-}
-
-/* 4. TERTIARY: Recommended Sparks Horizontal Scroll */
+/* 5. Recommended for You Carousel */
 .today-recommended-section {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.75rem;
+  padding-bottom: 1rem;
 }
 
 .today-recommended-header {
@@ -376,277 +299,356 @@
   justify-content: space-between;
 }
 
+.today-recommended-title {
+  color: var(--color-on-surface);
+  font-size: 20px;
+}
+
+.today-see-all-link {
+  color: var(--color-primary);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.today-see-all-link:hover {
+  opacity: 0.8;
+}
+
 .today-recommended-scroll {
   display: flex;
-  gap: 0.85rem;
+  gap: 0.75rem;
   overflow-x: auto;
-  padding-bottom: 0.4rem;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
   margin-left: calc(-1 * var(--margin-screen));
   margin-right: calc(-1 * var(--margin-screen));
   padding-left: var(--margin-screen);
   padding-right: var(--margin-screen);
-  scroll-behavior: smooth;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.today-recommended-scroll::-webkit-scrollbar {
-  display: none;
+  padding-top: 0.25rem;
+  padding-bottom: 0.5rem;
 }
 
 .today-rec-card {
-  flex: 0 0 236px;
-  background-color: var(--color-surface-container-low);
-  border: 1px solid var(--color-border-card);
-  border-radius: var(--radius-xl);
-  padding: 1rem 1.1rem;
+  scroll-snap-align: start;
+  flex-shrink: 0;
+  width: 250px;
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface-container-lowest);
+  border: 1px solid var(--color-border-subtle);
+  padding: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 40, 142, 0.04);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 160px;
-  box-sizing: border-box;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .today-rec-card:hover {
-  background-color: #1e2228;
-  border-color: rgba(229, 169, 90, 0.25);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 40, 142, 0.08);
+}
+
+.today-rec-img-wrap {
+  position: relative;
+  height: 7.25rem;
+  width: 100%;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+  background-color: var(--color-surface-container);
+}
+
+.today-rec-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.today-rec-tag {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(4px);
+  color: var(--color-on-surface);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  font-size: 10.5px;
+}
+
+/* Video badge for short video spark */
+.today-rec-video-badge {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--radius-full);
+  background-color: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+}
+
+.today-rec-video-pill {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .today-rec-body {
   display: flex;
   flex-direction: column;
-}
-
-.today-rec-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.35rem;
-}
-
-.today-rec-category {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-primary);
-}
-
-.today-rec-duration {
-  font-size: 11px;
-  color: var(--color-outline);
+  gap: 0.2rem;
+  margin-bottom: 0.75rem;
 }
 
 .today-rec-title {
-  font-family: var(--font-editorial);
-  font-size: 15px;
-  line-height: 20px;
-  font-weight: 500;
   color: var(--color-on-surface);
-  margin-bottom: 0.25rem;
+  line-height: 1.3;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.today-rec-quote {
-  font-family: var(--font-editorial);
-  font-style: italic;
-  font-size: 12px;
-  line-height: 17px;
+.today-rec-preview {
   color: var(--color-on-surface-variant);
+  font-size: 12.5px;
+  line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  margin: 0;
-  opacity: 0.9;
 }
 
-.today-rec-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-top: 0.5rem;
-  margin-top: auto;
-  border-top: 1px solid var(--color-border-card);
+.today-rec-duration {
+  color: var(--color-secondary);
+  font-size: 11.5px;
+  font-weight: 500;
+  margin-top: 0.15rem;
 }
 
 .today-rec-listen-btn {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-container);
+  color: var(--color-primary);
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  font-size: 11px;
+  justify-content: center;
+  gap: 0.3rem;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--color-primary);
+  transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
-/* 5. TERTIARY: Recent Reflections Minimal Rows */
-.today-recent-section {
+.today-rec-listen-btn:hover {
+  background-color: var(--color-surface-container-high);
+}
+
+.today-rec-listen-btn.video-cta {
+  background-color: #E2E7FF;
+  color: var(--color-primary-container);
+}
+
+.today-rec-listen-btn.video-cta:hover {
+  background-color: #D2D9F4;
+}
+
+/* 6. Guided 1-Minute Video Reflection Modal */
+.video-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background-color: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.video-modal-content {
+  width: 100%;
+  max-width: 420px;
+  border-radius: var(--radius-xl);
+  background-color: var(--color-surface-container-lowest);
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 40, 142, 0.25);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
 }
 
-.today-recent-list {
-  background-color: var(--color-surface-container-low);
-  border: 1px solid var(--color-border-card);
-  border-radius: var(--radius-xl);
-  padding: 0.25rem 1rem;
-}
-
-.today-recent-item {
+.video-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.85rem 0;
-  border-bottom: 1px solid var(--color-border-card);
-  cursor: pointer;
-  transition: color var(--transition-fast);
+  padding: 0.75rem 1rem;
+  background-color: var(--color-surface-container-low);
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
-.today-recent-item:last-child {
-  border-bottom: none;
-}
-
-.today-recent-item:hover .today-recent-title {
+.video-modal-badge {
   color: var(--color-primary);
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
-.today-recent-left {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.today-recent-meta {
-  font-size: 11px;
-  color: var(--color-outline);
+.video-modal-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
   display: flex;
   align-items: center;
-  gap: 0.35rem;
+  justify-content: center;
+  color: var(--color-secondary);
 }
 
-.today-recent-title {
-  font-family: var(--font-editorial);
-  font-size: 15px;
+.video-modal-close-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
   color: var(--color-on-surface);
-  transition: color var(--transition-fast);
 }
 
-.today-recent-right {
+.video-modal-player-viewport {
+  position: relative;
+  height: 220px;
+  width: 100%;
+  overflow: hidden;
+  background-color: #172554;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  color: var(--color-outline);
+  justify-content: center;
 }
 
-/* 6. TERTIARY: Mindful Progress Strip */
-.today-progress-strip {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.65rem;
+.video-modal-bg-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.45;
 }
 
-.today-progress-card {
-  background-color: var(--color-surface-container-lowest);
-  border: 1px solid var(--color-border-card);
-  border-radius: var(--radius-lg);
-  padding: 0.85rem 0.6rem;
+.video-modal-dark-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, transparent 40%, rgba(15, 23, 42, 0.8) 100%);
+}
+
+.video-breath-visualizer {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
+}
+
+.video-breath-ring {
+  width: 110px;
+  height: 110px;
+  border-radius: var(--radius-full);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  background: radial-gradient(circle, rgba(30, 64, 175, 0.4) 0%, rgba(255, 255, 255, 0.1) 70%);
+  box-shadow: 0 0 25px rgba(30, 64, 175, 0.6);
+  animation: breathPulse 6s ease-in-out infinite;
+}
+
+@keyframes breathPulse {
+  0%, 100% {
+    transform: scale(0.85);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 1;
+    box-shadow: 0 0 35px rgba(226, 231, 255, 0.8);
+  }
+}
+
+.video-breath-text {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  gap: 0.2rem;
+  color: #ffffff;
+  pointer-events: none;
 }
 
-.today-progress-icon {
-  font-size: 18px;
-  color: var(--color-primary);
-  margin-bottom: 2px;
-}
-
-.today-progress-val {
-  font-family: var(--font-editorial);
-  font-size: 18px;
+.video-breath-prompt {
+  font-size: 15px;
   font-weight: 500;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+
+.video-breath-timer {
+  font-size: 12px;
+  opacity: 0.85;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+.video-modal-body {
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.video-modal-title {
   color: var(--color-on-surface);
+  line-height: 1.3;
 }
 
-.today-progress-label {
-  font-size: 10.5px;
-  line-height: 14px;
-  color: var(--color-outline);
+.video-modal-preview {
+  color: var(--color-on-surface-variant);
+  font-size: 13.5px;
+  line-height: 1.5;
 }
 
-/* ======================================================== */
-/* Responsive Mobile-First Optimizations (320px - 430px)     */
-/* ======================================================== */
-@media (max-width: 430px) {
-  .today-page {
-    gap: 1.75rem;
-  }
+.video-modal-controls-row {
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
 }
 
-@media (max-width: 390px) {
-  .today-spark-title {
-    font-size: 28px;
-    line-height: 34px;
-  }
-  .today-spark-subtitle {
-    font-size: 16px;
-    line-height: 23px;
-  }
-  .today-reflect-quote {
-    font-size: 21px;
-    line-height: 30px;
-  }
-  .today-rec-card {
-    flex: 0 0 220px;
-    height: 158px;
-  }
+.video-modal-play-btn {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary-container);
+  color: var(--color-on-primary);
+  font-weight: 600;
+  font-size: 13.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
 }
 
-@media (max-width: 360px) {
-  .today-spark-title {
-    font-size: 25px;
-    line-height: 31px;
-  }
-  .today-spark-subtitle {
-    font-size: 15px;
-    line-height: 22px;
-  }
-  .today-reflect-card {
-    padding: 1.25rem 1rem;
-  }
-  .today-reflect-quote {
-    font-size: 18px;
-    line-height: 26px;
-  }
-  .today-read-cta-btn {
-    font-size: 12.5px;
-    height: 46px;
-  }
-  .today-icon-btn {
-    width: 46px;
-    height: 46px;
-  }
-  .today-unified-insight-card {
-    padding: 1rem 1.1rem;
-  }
-  .today-rec-card {
-    flex: 0 0 200px;
-    height: 155px;
-    padding: 0.85rem 0.9rem;
-  }
-  .today-progress-card {
-    padding: 0.75rem 0.4rem;
-  }
-  .today-progress-val {
-    font-size: 16px;
-  }
+.video-modal-read-btn {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-container);
+  color: var(--color-primary);
+  font-weight: 600;
+  font-size: 13.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
 }
+

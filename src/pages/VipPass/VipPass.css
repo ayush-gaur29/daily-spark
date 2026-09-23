@@ -1,257 +1,593 @@
-.vip-pass-page {
+/* VIP Pass Screen — Stitch Reference */
+
+.vip-screen {
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
-  padding-bottom: 1.25rem;
+  gap: 1.5rem;
+  width: 100%;
+  padding-bottom: 2rem;
 }
 
-/* VIP Header */
-.vip-header-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.vip-eyebrow {
-  font-size: 11px;
-  line-height: 14px;
-  letter-spacing: 0.12em;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--color-primary);
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.vip-main-title {
-  font-family: var(--font-editorial);
-  font-size: 30px;
-  line-height: 38px;
-  font-weight: 400;
-  color: var(--color-on-surface);
-  letter-spacing: -0.01em;
-}
-
-.vip-desc {
-  font-size: 14px;
-  line-height: 22px;
-  color: var(--color-on-surface-variant);
-  margin-top: 0.15rem;
-}
-
-/* VIP Active Status Card */
-.vip-status-card {
-  position: relative;
-  background-color: var(--color-surface-container-low);
-  border: 1px solid rgba(229, 169, 90, 0.25);
-  border-radius: var(--radius-xl);
-  padding: 1.15rem 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.vip-status-top-row {
+/* 1. Membership Status Pill Bar */
+.vip-tier-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  background-color: var(--color-surface-container-low);
+  border-radius: var(--radius-full);
+  padding: 0.65rem 1rem;
+  box-shadow: 0 1px 3px rgba(0, 40, 142, 0.04);
 }
 
-.vip-tier-badge {
+.vip-tier-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vip-tier-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-secondary);
+}
+
+.vip-tier-status {
+  color: var(--color-on-surface-variant);
+  letter-spacing: 0.06em;
+}
+
+.vip-upgrade-link {
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity var(--transition-fast);
+}
+
+.vip-upgrade-link:hover {
+  opacity: 0.8;
+}
+
+/* 2. Editorial VIP Hero Card */
+.vip-hero-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background-color: var(--color-surface-container-lowest);
+  padding: 1.5rem 1.25rem;
+  box-shadow: 0 4px 16px rgba(0, 40, 142, 0.06);
+  border: 1px solid var(--color-border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.vip-hero-ambient {
+  position: absolute;
+  top: -3rem;
+  right: -3rem;
+  width: 12rem;
+  height: 12rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-container);
+  opacity: 0.6;
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+.vip-hero-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  z-index: 2;
+}
+
+.vip-hero-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  background-color: var(--color-surface-container-highest);
+  color: var(--color-on-primary-fixed-variant);
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.vip-cohort-tag {
+  color: var(--color-outline);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.vip-hero-heading-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  position: relative;
+  z-index: 2;
+}
+
+.vip-hero-title {
+  color: var(--color-on-surface);
+  line-height: 1.25;
+}
+
+.vip-hero-subtitle {
+  color: var(--color-on-surface-variant);
+  line-height: 1.5;
+}
+
+.vip-hero-media {
+  position: relative;
+  width: 100%;
+  height: 9rem;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-top: 0.25rem;
+}
+
+.vip-hero-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vip-hero-gradient-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(19, 27, 46, 0.45) 0%, transparent 60%);
+}
+
+.vip-hero-counter-badge {
+  position: absolute;
+  bottom: 0.65rem;
+  left: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #ffffff;
+  font-weight: 500;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* 3. Included Privileges */
+.vip-privileges-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.vip-privileges-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.25rem;
+}
+
+.vip-privileges-label {
+  color: var(--color-outline);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.vip-all-inclusive {
   color: var(--color-primary);
-  font-size: 13.5px;
   font-weight: 600;
 }
 
-.vip-active-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.6rem;
-  border-radius: var(--radius-full);
-  background-color: rgba(229, 169, 90, 0.12);
-  color: var(--color-primary);
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  border: 1px solid rgba(229, 169, 90, 0.25);
-}
-
-.vip-active-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: var(--radius-full);
-  background-color: var(--color-primary);
-  box-shadow: 0 0 6px #ffc67d;
-}
-
-.vip-status-body {
+.vip-privileges-list {
   display: flex;
   flex-direction: column;
+  gap: 0.625rem;
 }
 
-.vip-status-desc {
-  font-size: 13px;
-  line-height: 19px;
-  color: var(--color-on-surface-variant);
-  margin: 0;
-}
-
-/* VIP Benefits Section */
-.vip-benefits-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.vip-section-heading {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--color-outline);
-  padding-left: 0.25rem;
-}
-
-.vip-benefits-list {
-  background-color: var(--color-surface-container-low);
-  border: 1px solid var(--color-border-card);
-  border-radius: var(--radius-xl);
-  padding: 0.25rem 1rem;
-}
-
-.vip-benefit-row {
+.vip-privilege-item {
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.85rem 0.25rem;
-  border-bottom: 1px solid var(--color-border-card);
-}
-
-.vip-benefit-row:last-child {
-  border-bottom: none;
-}
-
-.vip-benefit-icon-box {
-  width: 32px;
-  height: 32px;
+  gap: 0.85rem;
+  background-color: var(--color-surface-container-lowest);
+  border: 1px solid var(--color-border-subtle);
+  padding: 1rem;
   border-radius: var(--radius-md);
+  box-shadow: 0 1px 4px rgba(0, 40, 142, 0.04);
+}
+
+.vip-privilege-icon-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
   background-color: var(--color-surface-container);
   color: var(--color-primary);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  margin-top: 1px;
 }
 
-.vip-benefit-content {
+.vip-privilege-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.vip-privilege-title {
+  color: var(--color-on-surface);
+  line-height: 1.3;
+}
+
+.vip-privilege-desc {
+  color: var(--color-on-surface-variant);
+  margin-top: 2px;
+  line-height: 1.45;
+}
+
+/* 4. VIP Video Library (Curated, Minimal, Premium) */
+.vip-video-library-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.vip-video-library-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.25rem;
+}
+
+.vip-video-header-left {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
 }
 
-.vip-benefit-title {
-  font-size: 13.5px;
-  font-weight: 600;
-  color: var(--color-on-surface);
-  margin: 0;
-}
-
-.vip-benefit-desc {
-  font-size: 12px;
-  line-height: 17px;
-  color: var(--color-on-surface-variant);
-  margin: 0;
-}
-
-/* Exclusive Content Section */
-.vip-content-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.vip-content-cards-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.vip-spark-item {
-  position: relative;
-  background-color: var(--color-surface-container-low);
-  border: 1px solid rgba(229, 169, 90, 0.2);
-  border-radius: var(--radius-xl);
-  padding: 1rem 1.15rem;
-  display: flex;
-  flex-direction: column;
-  cursor: pointer;
-  transition: all var(--transition-normal);
-}
-
-.vip-spark-item:hover {
-  background-color: #1e2229;
-  border-color: rgba(229, 169, 90, 0.35);
-  transform: translateY(-1px);
-}
-
-.vip-spark-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.35rem;
-}
-
-.vip-spark-category {
-  font-size: 10px;
+.vip-video-header-badge {
+  color: var(--color-primary-container);
   font-weight: 700;
   letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-primary);
+  font-size: 10.5px;
 }
 
-.vip-spark-duration {
-  font-size: 11.5px;
-  color: var(--color-outline);
-}
-
-.vip-spark-title {
-  font-family: var(--font-editorial);
-  font-size: 17.5px;
-  line-height: 23px;
-  font-weight: 500;
+.vip-video-header-title {
   color: var(--color-on-surface);
-  margin-bottom: 0.3rem;
-  transition: color var(--transition-fast);
+  line-height: 1.25;
 }
 
-.vip-spark-item:hover .vip-spark-title {
+.vip-video-count-pill {
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-container);
   color: var(--color-primary);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  font-size: 10.5px;
 }
 
-.vip-spark-preview {
-  font-family: var(--font-editorial);
-  font-style: italic;
-  font-size: 13px;
-  line-height: 18px;
+.vip-video-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.vip-video-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface-container-lowest);
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: 0 2px 8px rgba(0, 40, 142, 0.04);
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+
+.vip-video-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 40, 142, 0.08);
+  border-color: rgba(30, 64, 175, 0.2);
+}
+
+.vip-video-thumb-wrap {
+  position: relative;
+  width: 90px;
+  height: 64px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+  background-color: #172554;
+}
+
+.vip-video-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vip-video-play-badge {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(15, 23, 42, 0.35);
+  color: #ffffff;
+}
+
+.vip-video-duration-pill {
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  background-color: rgba(15, 23, 42, 0.85);
+  color: #ffffff;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 0.1rem 0.3rem;
+  border-radius: 3px;
+  letter-spacing: 0.04em;
+}
+
+.vip-video-card-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.vip-video-card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.vip-video-category {
+  color: var(--color-secondary);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+}
+
+.vip-video-vip-label {
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  background-color: var(--color-surface-container-high);
+  color: var(--color-primary-container);
+  font-weight: 700;
+  font-size: 9.5px;
+  letter-spacing: 0.04em;
+}
+
+.vip-video-card-title {
+  color: var(--color-on-surface);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vip-video-card-desc {
   color: var(--color-on-surface-variant);
-  margin-bottom: 0.75rem;
+  font-size: 12px;
+  line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  opacity: 0.9;
 }
 
-.vip-spark-actions {
+.vip-video-card-action {
+  color: var(--color-outline);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-right: 0.25rem;
+}
+
+/* VIP Video Modal */
+.vip-video-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background-color: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.vip-video-modal-content {
+  width: 100%;
+  max-width: 440px;
+  border-radius: var(--radius-xl);
+  background-color: var(--color-surface-container-lowest);
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 40, 142, 0.25);
+  display: flex;
+  flex-direction: column;
+}
+
+.vip-video-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 0.25rem;
+  padding: 0.75rem 1rem;
+  background-color: var(--color-surface-container-low);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.vip-video-modal-badge {
+  color: var(--color-primary);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.vip-video-modal-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-secondary);
+}
+
+.vip-video-modal-close-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--color-on-surface);
+}
+
+.vip-video-modal-player-viewport {
+  width: 100%;
+  background-color: #0F172A;
+}
+
+.vip-video-modal-body {
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.vip-video-modal-title {
+  color: var(--color-on-surface);
+  line-height: 1.3;
+}
+
+.vip-video-modal-subtitle {
+  color: var(--color-on-surface-variant);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+
+.vip-video-modal-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--color-secondary);
+  font-size: 12px;
+  margin-top: 0.25rem;
+}
+
+/* 5. Select Membership */
+.vip-select-membership {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-bottom: 1rem;
+}
+
+.vip-select-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.25rem;
+}
+
+.vip-select-label {
+  color: var(--color-outline);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.vip-billing-note {
+  color: var(--color-secondary);
+}
+
+.vip-pricing-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.vip-pricing-card {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 1rem 1.15rem;
+  border-radius: var(--radius-lg);
+  background-color: var(--color-surface-container-lowest);
+  border: 1.5px solid var(--color-border-subtle);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.vip-pricing-card.selected {
+  background-color: rgba(220, 225, 255, 0.35);
+  border-color: var(--color-primary-container);
+  box-shadow: 0 2px 8px rgba(0, 40, 142, 0.08);
+}
+
+.vip-radio-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.vip-pricing-details {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.vip-pricing-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.vip-pricing-name {
+  color: var(--color-on-surface);
+}
+
+.vip-save-badge {
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary-container);
+  color: var(--color-on-primary);
+  font-weight: 700;
+  font-size: 10px;
+}
+
+.vip-pricing-price {
+  color: var(--color-on-surface-variant);
+  margin-top: 2px;
+}
+
+/* CTA */
+.vip-cta-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.vip-start-trial-btn {
+  width: 100%;
+  padding: 1rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary-container);
+  color: var(--color-on-primary);
+  font-weight: 600;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 40, 142, 0.22);
+  transition: all var(--transition-fast);
+}
+
+.vip-start-trial-btn:active {
+  background-color: var(--color-primary-interactive);
+  transform: scale(0.98);
+}
+
+.vip-cta-disclaimer {
+  color: var(--color-on-surface-variant);
+  text-align: center;
 }

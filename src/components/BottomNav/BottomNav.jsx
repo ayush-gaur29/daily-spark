@@ -4,8 +4,8 @@ export const BottomNav = ({ currentRoute, onNavigate }) => {
   const navItems = [
     { id: 'today', label: 'Today', icon: 'light_mode' },
     { id: 'saved', label: 'Saved', icon: 'bookmark' },
-    { id: 'vip-pass', label: 'VIP Pass', icon: 'workspace_premium' },
-    { id: 'profile', label: 'Profile', icon: 'account_circle' }
+    { id: 'vip-pass', label: 'VIP Pass', icon: 'verified' },
+    { id: 'profile', label: 'Profile', icon: 'person' }
   ];
 
   return (
@@ -24,7 +24,7 @@ export const BottomNav = ({ currentRoute, onNavigate }) => {
               <span
                 className="material-symbols-outlined"
                 style={{
-                  fontSize: '24px',
+                  fontSize: '22px',
                   fontVariationSettings: isActive ? "'FILL' 1" : "'FILL' 0"
                 }}
               >

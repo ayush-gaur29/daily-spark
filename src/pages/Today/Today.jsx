@@ -1,85 +1,188 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSparks } from '../../context/SparksContext';
 import { useAudio } from '../../context/AudioContext';
 import { AudioPlayer } from '../../components/AudioPlayer/AudioPlayer';
+import { VideoPlayer } from '../../components/VideoPlayer/VideoPlayer';
+import { ImageWithFallback } from '../../components/Common/ImageWithFallback';
 import { INITIAL_USER } from '../../data/user';
+import { INITIAL_SPARKS, RECOMMENDED_SPARKS } from '../../data/sparks';
 import './Today.css';
 
 export const Today = ({ onNavigateToSpark }) => {
-  const { sparks, toggleSaveSpark, openShare, showToast } = useSparks();
+  const { sparks, toggleSaveSpark, openShare } = useSparks();
   const { currentTrack, isPlaying, playTrack } = useAudio();
 
-  // Primary: Today's spark is the first spark
-  const todaySpark = sparks[0];
-  const isSaved = todaySpark?.saved;
+  // Video modal state for recommended video spark
+  const [activeVideoModal, setActiveVideoModal] = useState(null);
 
-  // Secondary & Tertiary content from mock sparks
-  const inProgressSpark = sparks.find((s) => s.id === 'the-human-motivator') || sparks[1];
-  const isContinueTrackPlaying = currentTrack?.id === inProgressSpark?.id && isPlaying;
+  // Primary: Today's spark is the first spark ("The Architecture of Quiet Clarity")
+  const todaySpark = sparks[0] || INITIAL_SPARKS[0] || {};
+  const isTodaySaved = !!todaySpark.saved;
 
-  const recommendedSparks = sparks.filter(
-    (s) => s.id === 'small-actions-big-results' || s.id === 'how-want-shapes-your-direction' || s.id === 'the-power-of-attention'
-  );
+  // Curated Recommended content (guaranteed 4 items, 3 audio + 1 video)
+  const curated = sparks.filter((s) => s.recommended);
+  const recommendedSparks = curated.length >= 3 ? curated : RECOMMENDED_SPARKS;
 
-  const recentSparks = sparks.filter(
-    (s) => s.id === 'the-human-motivator' || s.id === 'how-want-is-your-first-influence'
-  );
-
-  const todayFormattedDate = new Intl.DateTimeFormat('en-US', {
+  const formattedDate = new Intl.DateTimeFormat('en-US', {
     weekday: 'long',
-    month: 'short',
+    month: 'long',
     day: 'numeric'
   }).format(new Date());
 
-  const handleContinueListen = (e) => {
+  const handleSparkClick = (sparkId) => {
+    onNavigateToSpark(sparkId);
+  };
+
+  const handleListenClick = (e, spark) => {
     e.stopPropagation();
-    playTrack(inProgressSpark);
+    playTrack(spark);
+  };
+
+  const handleWatchClick = (e, spark) => {
+    e.stopPropagation();
+    setActiveVideoModal(spark);
+  };
+
+  const closeVideoModal = () => {
+    setActiveVideoModal(null);
   };
 
   return (
-    <div className="today-page animate-fade-in">
-      {/* 1. Contextual Greeting Header */}
-      <header className="today-context-header">
-        <h2 className="today-greeting-label">GOOD MORNING, {INITIAL_USER.name.toUpperCase()}</h2>
-        <p className="today-date-text">{todayFormattedDate}</p>
-      </header>
-
-      {/* ======================================================== */}
-      {/* 2. PRIMARY: Featured Daily Spark (Strongest Emphasis)   */}
-      {/* ======================================================== */}
-      <section className="today-spark-hero" aria-label="Today's featured reflection">
-        <span className="today-spark-eyebrow">Today's Spark • {todaySpark?.categoryLabel}</span>
-        <h1 className="today-spark-title">{todaySpark?.title}</h1>
-        <h2 className="today-spark-subtitle">{todaySpark?.subtitle}</h2>
+    <div className="today-screen animate-fade-in">
+      {/* 1. Greeting Block */}
+      <section className="today-greeting-block" aria-label="Greeting">
+        <div className="today-greeting-text">
+          <p className="today-date-eyebrow font-label-sm">
+            {formattedDate}
+          </p>
+          <h1 className="today-user-greeting font-headline-md">
+            Good morning, {INITIAL_USER.firstName}
+          </h1>
+        </div>
+        <div className="today-sun-badge" title="Morning reflection mode active">
+          <span className="material-symbols-outlined text-[24px]">wb_sunny</span>
+          <span className="today-sun-dot" />
+        </div>
       </section>
 
-      {/* Reusable Compact Audio Reflection Player */}
-      <section aria-label="Audio reflection player">
-        <AudioPlayer spark={todaySpark} variant="compact" />
-      </section>
-
-      {/* REFLECT Editorial Quote Card (Primary Experience Focus) */}
-      <section className="today-reflect-card">
-        <div className="today-reflect-badge">
-          <span className="material-symbols-outlined" style={{ fontSize: '16px', fontVariationSettings: "'FILL' 1" }}>
-            flare
-          </span>
-          <span>Reflect</span>
+      {/* 2. Today's Spark Hero Card with Integrated Video */}
+      <section className="today-hero-card" aria-label="Today's Featured Reflection">
+        <div className="today-hero-badge-pill font-label-sm">
+          DAILY SPARK • {todaySpark.duration?.toUpperCase() || '4 MIN'}
         </div>
 
-        <blockquote className="today-reflect-quote">
-          "{todaySpark?.quote}"
-        </blockquote>
+        <h2
+          className="today-hero-title font-headline-lg cursor-pointer"
+          onClick={() => handleSparkClick(todaySpark.id)}
+          tabIndex={0}
+          role="button"
+          onKeyDown={(e) => e.key === 'Enter' && handleSparkClick(todaySpark.id)}
+        >
+          {todaySpark.title}
+        </h2>
 
-        <p className="today-reflect-preview">
-          {todaySpark?.shortPreview || todaySpark?.conciseTakeaway || "Belief is forged in the momentum of repeated attention. Narrow your sight onto a single worthy endeavor."}
+        <p className="today-hero-subtitle font-body-md">
+          {todaySpark.subtitle}
         </p>
 
-        {/* Primary & Secondary Action Row */}
-        <div className="today-actions-row">
+        {/* Video Player — Compact, Stitch-styled 16:9 */}
+        <div className="today-video-wrap">
+          <VideoPlayer
+            src={todaySpark.videoUrl || '/assets/videos/daily-motivation.mp4'}
+            poster={todaySpark.image || '/assets/images/hero-quiet-clarity.jpg'}
+            title={todaySpark.title}
+            durationLabel={todaySpark.videoDuration || '0:30'}
+            variant="hero"
+          />
+        </div>
+
+        {/* Integrated Audio Player */}
+        <div className="today-audio-wrap">
+          <AudioPlayer spark={todaySpark} variant="compact" />
+        </div>
+      </section>
+
+      {/* 3. Editorial Reflection / Quote Block */}
+      <section className="today-quote-card" aria-label="Today's Quote">
+        <span className="material-symbols-outlined today-quote-watermark">
+          format_quote
+        </span>
+        <blockquote className="today-quote-text font-quote-display">
+          “{todaySpark.quote}”
+        </blockquote>
+
+        <div className="today-quote-bottom-row">
+          <cite className="today-quote-author font-label-md">
+            — DR. CUBIE
+          </cite>
+          <div className="today-quote-actions">
+            <button
+              className={`today-quote-action-btn ${isTodaySaved ? 'saved' : ''} btn-pressable`}
+              onClick={() => toggleSaveSpark(todaySpark.id)}
+              aria-label={isTodaySaved ? 'Remove from saved' : 'Save spark quote'}
+              title={isTodaySaved ? 'Saved' : 'Save'}
+            >
+              <span
+                className="material-symbols-outlined"
+                style={{
+                  fontSize: '20px',
+                  fontVariationSettings: isTodaySaved ? "'FILL' 1" : "'FILL' 0"
+                }}
+              >
+                {isTodaySaved ? 'bookmark' : 'bookmark_border'}
+              </span>
+            </button>
+            <button
+              className="today-quote-action-btn btn-pressable"
+              onClick={() => openShare(todaySpark)}
+              aria-label="Share quote"
+              title="Share"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+                ios_share
+              </span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. Concise Insight & Practice Section */}
+      <section className="today-insight-card" aria-label="Daily Insight & Practice">
+        {/* Insight Row */}
+        <div className="today-takeaway-row">
+          <div className="today-takeaway-icon-box insight">
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+              auto_awesome
+            </span>
+          </div>
+          <div className="today-takeaway-content">
+            <span className="today-takeaway-label font-label-md">Insight: </span>
+            <span className="today-takeaway-desc font-body-md">
+              {todaySpark.insight || 'Stillness protects cognitive energy before high-stakes choices.'}
+            </span>
+          </div>
+        </div>
+
+        {/* Practice Row */}
+        <div className="today-takeaway-row">
+          <div className="today-takeaway-icon-box practice">
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+              explore
+            </span>
+          </div>
+          <div className="today-takeaway-content">
+            <span className="today-takeaway-label font-label-md">Practice: </span>
+            <span className="today-takeaway-desc font-body-md">
+              {todaySpark.practice || 'Take three uninterrupted breaths before opening your morning communications.'}
+            </span>
+          </div>
+        </div>
+
+        {/* Primary Action Button */}
+        <div className="today-full-reflection-btn-wrap">
           <button
             className="today-read-cta-btn btn-pressable"
-            onClick={() => onNavigateToSpark(todaySpark.id)}
+            onClick={() => handleSparkClick(todaySpark.id)}
             aria-label={`Read full reflection for ${todaySpark.title}`}
           >
             <span>Read Full Reflection</span>
@@ -87,230 +190,169 @@ export const Today = ({ onNavigateToSpark }) => {
               arrow_forward
             </span>
           </button>
-
-          <div className="today-secondary-actions">
-            <button
-              className={`today-icon-btn ${isSaved ? 'saved' : ''} btn-pressable`}
-              onClick={() => toggleSaveSpark(todaySpark.id)}
-              aria-label={isSaved ? 'Remove from saved' : 'Save spark'}
-              title={isSaved ? 'Saved' : 'Save'}
-            >
-              <span
-                className="material-symbols-outlined"
-                style={{
-                  fontSize: '22px',
-                  fontVariationSettings: isSaved ? "'FILL' 1" : "'FILL' 0"
-                }}
-              >
-                bookmark
-              </span>
-            </button>
-
-            <button
-              className="today-icon-btn btn-pressable"
-              onClick={() => openShare(todaySpark)}
-              aria-label="Share today's spark"
-              title="Share"
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
-                share
-              </span>
-            </button>
-          </div>
         </div>
       </section>
 
-      {/* ======================================================== */}
-      {/* 3. SECONDARY: Daily Insight & Prompt (Unified Calm Card)  */}
-      {/* ======================================================== */}
-      <section className="today-secondary-section" aria-label="Daily insight and reflection prompt">
-        <h2 className="today-section-heading">Daily Insight</h2>
-
-        <div className="today-unified-insight-card">
-          {/* 1. Core Takeaway */}
-          <div className="today-insight-block">
-            <div className="today-insight-label-row">
-              <span className="material-symbols-outlined today-insight-label-icon">psychology</span>
-              <span className="today-insight-label">Core Takeaway</span>
-            </div>
-            <p className="today-insight-text">
-              {todaySpark?.conciseTakeaway || "Attention shapes momentum. What you focus on repeatedly becomes easier to believe."}
-            </p>
-          </div>
-
-
-
-
-        </div>
-      </section>
-
-      {/* ======================================================== */}
-      {/* 4. TERTIARY: Continue Listening (Compact Strip)           */}
-      {/* ======================================================== */}
-      <section aria-label="Continue listening section">
-        <h2 className="today-section-heading" style={{ marginBottom: '0.5rem' }}>Continue Listening</h2>
-        <div
-          className="today-continue-strip"
-          onClick={() => onNavigateToSpark(inProgressSpark.id)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') onNavigateToSpark(inProgressSpark.id);
-          }}
-          aria-label={`Continue listening to ${inProgressSpark.title}`}
-        >
+      {/* 5. Recommended for You Horizontal Carousel */}
+      <section className="today-recommended-section" aria-label="Recommended for You">
+        <div className="today-recommended-header">
+          <h3 className="today-recommended-title font-headline-md">
+            Recommended for You
+          </h3>
           <button
-            className={`today-continue-play-btn ${isContinueTrackPlaying ? 'playing' : ''}`}
-            onClick={handleContinueListen}
-            aria-label={isContinueTrackPlaying ? `Pause ${inProgressSpark.title}` : `Play ${inProgressSpark.title}`}
+            className="today-see-all-link font-label-md"
+            onClick={() => handleSparkClick(recommendedSparks[0]?.id || 'leading-with-poise')}
+            aria-label="See all recommended sparks"
           >
-            <span
-              className="material-symbols-outlined"
-              style={{ fontSize: '18px', fontVariationSettings: isContinueTrackPlaying ? "'FILL' 1" : "'FILL' 0" }}
-            >
-              {isContinueTrackPlaying ? 'pause' : 'play_arrow'}
+            <span>See All</span>
+            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+              chevron_right
             </span>
           </button>
-
-          <div className="today-continue-body">
-            <div className="today-continue-header-line">
-              <span className="today-continue-tag">{inProgressSpark.categoryLabel}</span>
-              <span className="today-continue-time">1m 32s left</span>
-            </div>
-            <span className="today-continue-title">{inProgressSpark.title}</span>
-            <div className="today-continue-bar">
-              <div className="today-continue-fill" style={{ width: '62%' }} />
-            </div>
-          </div>
-
-          <span className="material-symbols-outlined today-continue-chevron">
-            chevron_right
-          </span>
-        </div>
-      </section>
-
-      {/* ======================================================== */}
-      {/* 5. TERTIARY: Recommended For You (Horizontal Scroll)     */}
-      {/* ======================================================== */}
-      <section className="today-recommended-section" aria-label="Recommended sparks">
-        <div className="today-recommended-header">
-          <h2 className="today-section-heading">Recommended For You</h2>
-          <span style={{ fontSize: '11px', color: 'var(--color-outline)', fontWeight: 600 }}>Curated</span>
         </div>
 
-        <div className="today-recommended-scroll" role="region" aria-label="Recommended sparks list">
+        <div className="today-recommended-scroll no-scrollbar" role="region" aria-label="Recommended Sparks Carousel">
           {recommendedSparks.map((spark) => {
             const isPlayingThis = currentTrack?.id === spark.id && isPlaying;
+            const isVideo = !!spark.isVideo || spark.type === 'video';
 
             return (
-              <div
+              <article
                 key={spark.id}
                 className="today-rec-card"
-                onClick={() => onNavigateToSpark(spark.id)}
+                onClick={() => handleSparkClick(spark.id)}
                 role="button"
                 tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') onNavigateToSpark(spark.id);
-                }}
-                aria-label={`View reflection: ${spark.title}`}
+                onKeyDown={(e) => e.key === 'Enter' && handleSparkClick(spark.id)}
               >
+                <div className="today-rec-img-wrap">
+                  <ImageWithFallback
+                    src={spark.image}
+                    fallbackSrc={spark.fallbackImage}
+                    type={isVideo ? 'video' : 'spark'}
+                    alt={spark.title}
+                    className="today-rec-img"
+                  />
+                  <span className="today-rec-tag font-label-sm">
+                    {spark.categoryLabel || 'MINDSET'}
+                  </span>
+
+                  {/* Subtle video indicator badge */}
+                  {isVideo && (
+                    <div className="today-rec-video-badge" title="Video reflection">
+                      <span
+                        className="material-symbols-outlined"
+                        style={{ fontSize: '15px', fontVariationSettings: "'FILL' 1" }}
+                      >
+                        play_circle
+                      </span>
+                      <span className="today-rec-video-pill font-label-sm">
+                        {spark.videoDuration || '1 MIN'} VIDEO
+                      </span>
+                    </div>
+                  )}
+                </div>
+
                 <div className="today-rec-body">
-                  <div className="today-rec-top">
-                    <span className="today-rec-category">{spark.categoryLabel}</span>
-                    <span className="today-rec-duration">{spark.duration}</span>
-                  </div>
-                  <h3 className="today-rec-title">{spark.title}</h3>
-                  <p className="today-rec-quote">"{spark.shortPreview || spark.quote}"</p>
+                  <h4 className="today-rec-title font-title-md">
+                    {spark.title}
+                  </h4>
+                  <p className="today-rec-preview font-body-sm">
+                    {spark.shortPreview || spark.subtitle}
+                  </p>
+                  <p className="today-rec-duration font-body-sm">
+                    {isVideo ? `${spark.videoDuration || '1 min'} video` : `${spark.duration} spark`}
+                  </p>
                 </div>
 
-                <div className="today-rec-footer">
-                  <span className="today-rec-listen-btn">
-                    <span
-                      className="material-symbols-outlined"
-                      style={{ fontSize: '16px', fontVariationSettings: isPlayingThis ? "'FILL' 1" : "'FILL' 0" }}
-                    >
-                      {isPlayingThis ? 'pause' : 'play_circle'}
-                    </span>
-                    <span>{isPlayingThis ? 'Playing' : 'Listen'}</span>
+                <button
+                  className={`today-rec-listen-btn font-label-md btn-pressable ${isVideo ? 'video-cta' : ''}`}
+                  onClick={(e) => (isVideo ? handleWatchClick(e, spark) : handleListenClick(e, spark))}
+                  aria-label={
+                    isVideo
+                      ? `Watch ${spark.title}`
+                      : isPlayingThis
+                      ? `Pause ${spark.title}`
+                      : `Listen to ${spark.title}`
+                  }
+                >
+                  <span
+                    className="material-symbols-outlined"
+                    style={{
+                      fontSize: '18px',
+                      fontVariationSettings: isPlayingThis || isVideo ? "'FILL' 1" : "'FILL' 0"
+                    }}
+                  >
+                    {isVideo ? 'play_circle' : isPlayingThis ? 'pause' : 'play_arrow'}
                   </span>
-
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px', color: 'var(--color-outline)' }}>
-                    arrow_forward
-                  </span>
-                </div>
-              </div>
+                  <span>{isVideo ? 'Watch' : isPlayingThis ? 'Playing' : 'Listen'}</span>
+                </button>
+              </article>
             );
           })}
         </div>
       </section>
 
-      {/* ======================================================== */}
-      {/* 6. TERTIARY: Recent Reflections Minimal Rows             */}
-      {/* ======================================================== */}
-      <section className="today-recent-section" aria-label="Recent reflections archive">
-        <h2 className="today-section-heading">Recent Reflections</h2>
-        <div className="today-recent-list">
-          {recentSparks.map((spark) => (
-            <div
-              key={spark.id}
-              className="today-recent-item"
-              onClick={() => onNavigateToSpark(spark.id)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') onNavigateToSpark(spark.id);
-              }}
-              aria-label={`Open recent reflection: ${spark.title}`}
-            >
-              <div className="today-recent-left">
-                <div className="today-recent-meta">
-                  <span>{spark.date}</span>
-                  <span>•</span>
-                  <span>{spark.categoryLabel}</span>
-                  <span>•</span>
-                  <span>{spark.duration}</span>
-                </div>
-                <span className="today-recent-title">{spark.title}</span>
+      {/* 6. Guided Video Reflection Modal */}
+      {activeVideoModal && (
+        <div className="video-modal-backdrop animate-fade-in" onClick={closeVideoModal}>
+          <div
+            className="video-modal-content"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${activeVideoModal.title} Video Reflection`}
+          >
+            <div className="video-modal-header">
+              <div className="video-modal-badge font-label-sm">
+                EXCLUSIVE VIDEO • {activeVideoModal.categoryLabel}
               </div>
+              <button
+                className="video-modal-close-btn btn-pressable"
+                onClick={closeVideoModal}
+                aria-label="Close video player"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
 
-              <div className="today-recent-right">
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                  chevron_right
-                </span>
+            <div className="video-modal-player-viewport">
+              <VideoPlayer
+                src={activeVideoModal.videoUrl || '/assets/videos/focus-reset.mp4'}
+                poster={activeVideoModal.image}
+                title={activeVideoModal.title}
+                durationLabel={activeVideoModal.videoDuration || '1:05'}
+                variant="hero"
+              />
+            </div>
+
+            <div className="video-modal-body">
+              <h3 className="video-modal-title font-headline-md">
+                {activeVideoModal.title}
+              </h3>
+              <p className="video-modal-preview font-body-md">
+                {activeVideoModal.shortPreview || activeVideoModal.subtitle}
+              </p>
+
+              <div className="video-modal-controls-row">
+                <button
+                  className="video-modal-read-btn btn-pressable"
+                  onClick={() => {
+                    closeVideoModal();
+                    handleSparkClick(activeVideoModal.id);
+                  }}
+                  style={{ width: '100%' }}
+                >
+                  <span>Open Full Article</span>
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                    arrow_forward
+                  </span>
+                </button>
               </div>
             </div>
-          ))}
+          </div>
         </div>
-      </section>
-
-      {/* ======================================================== */}
-      {/* 7. TERTIARY: Daily Mindful Progress & Streak             */}
-      {/* ======================================================== */}
-      <section className="today-progress-strip" aria-label="Daily mindful progress statistics">
-        <div className="today-progress-card">
-          <span className="material-symbols-outlined today-progress-icon" style={{ fontVariationSettings: "'FILL' 1" }}>
-            local_fire_department
-          </span>
-          <span className="today-progress-val">{INITIAL_USER.streakDays} Days</span>
-          <span className="today-progress-label">Active Streak</span>
-        </div>
-
-        <div className="today-progress-card">
-          <span className="material-symbols-outlined today-progress-icon" style={{ fontVariationSettings: "'FILL' 1" }}>
-            check_circle
-          </span>
-          <span className="today-progress-val">Today</span>
-          <span className="today-progress-label">Spark Done</span>
-        </div>
-
-        <div className="today-progress-card">
-          <span className="material-symbols-outlined today-progress-icon">
-            headphones
-          </span>
-          <span className="today-progress-val">{INITIAL_USER.totalListenedMinutes}m</span>
-          <span className="today-progress-label">Total Listened</span>
-        </div>
-      </section>
+      )}
     </div>
   );
 };
