@@ -1,0 +1,257 @@
+.vip-pass-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  padding-bottom: 3rem;
+}
+
+/* VIP Header */
+.vip-header-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.vip-eyebrow {
+  font-size: 11px;
+  line-height: 14px;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.vip-main-title {
+  font-family: var(--font-editorial);
+  font-size: 30px;
+  line-height: 38px;
+  font-weight: 400;
+  color: var(--color-on-surface);
+  letter-spacing: -0.01em;
+}
+
+.vip-desc {
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--color-on-surface-variant);
+  margin-top: 0.15rem;
+}
+
+/* VIP Active Status Card */
+.vip-status-card {
+  position: relative;
+  background-color: var(--color-surface-container-low);
+  border: 1px solid rgba(229, 169, 90, 0.25);
+  border-radius: var(--radius-xl);
+  padding: 1.15rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.vip-status-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vip-tier-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--color-primary);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.vip-active-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-full);
+  background-color: rgba(229, 169, 90, 0.12);
+  color: var(--color-primary);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid rgba(229, 169, 90, 0.25);
+}
+
+.vip-active-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary);
+  box-shadow: 0 0 6px #ffc67d;
+}
+
+.vip-status-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.vip-status-desc {
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--color-on-surface-variant);
+  margin: 0;
+}
+
+/* VIP Benefits Section */
+.vip-benefits-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.vip-section-heading {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-outline);
+  padding-left: 0.25rem;
+}
+
+.vip-benefits-list {
+  background-color: var(--color-surface-container-low);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-xl);
+  padding: 0.25rem 1rem;
+}
+
+.vip-benefit-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 0.25rem;
+  border-bottom: 1px solid var(--color-border-card);
+}
+
+.vip-benefit-row:last-child {
+  border-bottom: none;
+}
+
+.vip-benefit-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-container);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.vip-benefit-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.vip-benefit-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--color-on-surface);
+  margin: 0;
+}
+
+.vip-benefit-desc {
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--color-on-surface-variant);
+  margin: 0;
+}
+
+/* Exclusive Content Section */
+.vip-content-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.vip-content-cards-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.vip-spark-item {
+  position: relative;
+  background-color: var(--color-surface-container-low);
+  border: 1px solid rgba(229, 169, 90, 0.2);
+  border-radius: var(--radius-xl);
+  padding: 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.vip-spark-item:hover {
+  background-color: #1e2229;
+  border-color: rgba(229, 169, 90, 0.35);
+  transform: translateY(-1px);
+}
+
+.vip-spark-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
+.vip-spark-category {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.vip-spark-duration {
+  font-size: 11.5px;
+  color: var(--color-outline);
+}
+
+.vip-spark-title {
+  font-family: var(--font-editorial);
+  font-size: 17.5px;
+  line-height: 23px;
+  font-weight: 500;
+  color: var(--color-on-surface);
+  margin-bottom: 0.3rem;
+  transition: color var(--transition-fast);
+}
+
+.vip-spark-item:hover .vip-spark-title {
+  color: var(--color-primary);
+}
+
+.vip-spark-preview {
+  font-family: var(--font-editorial);
+  font-style: italic;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--color-on-surface-variant);
+  margin-bottom: 0.75rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  opacity: 0.9;
+}
+
+.vip-spark-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.25rem;
+}

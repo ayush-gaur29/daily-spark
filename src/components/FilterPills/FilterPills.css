@@ -1,0 +1,50 @@
+.filter-row-container {
+  position: relative;
+  width: calc(100% + calc(var(--margin-screen) * 2));
+  margin-left: calc(-1 * var(--margin-screen));
+  margin-right: calc(-1 * var(--margin-screen));
+  padding-left: var(--margin-screen);
+  padding-right: var(--margin-screen);
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+}
+
+.filter-pills-scroll {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  scroll-behavior: smooth;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.filter-pills-scroll::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+}
+
+.filter-pill {
+  flex-shrink: 0;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  background-color: var(--color-surface-container);
+  color: var(--color-on-surface-variant);
+  border: 1px solid transparent;
+  transition: all var(--transition-fast);
+}
+
+.filter-pill:hover:not(.active) {
+  background-color: var(--color-surface-container-high);
+  color: var(--color-on-surface);
+}
+
+.filter-pill.active {
+  background-color: var(--color-primary-container);
+  color: var(--color-on-primary-container);
+  box-shadow: 0 0 16px rgba(229, 169, 90, 0.25);
+  font-weight: 600;
+}

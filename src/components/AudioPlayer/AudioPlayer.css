@@ -1,0 +1,173 @@
+.audio-player-card {
+  width: 100%;
+  background: var(--color-surface-container-low);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.audio-player-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(229, 169, 90, 0.4), transparent);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.audio-player-card.is-playing::before {
+  opacity: 1;
+}
+
+.audio-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.audio-track-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.audio-track-title {
+  font-family: var(--font-editorial);
+  font-size: 17px;
+  line-height: 22px;
+  font-weight: 500;
+  color: var(--color-on-surface);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.audio-track-meta {
+  font-size: 12px;
+  color: var(--color-outline);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Scrub Progress Bar */
+.scrub-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: 100%;
+}
+
+.scrub-bar-track {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  background: var(--color-surface-container-high);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.scrub-bar-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, #d49742, #ffc67d);
+  border-radius: var(--radius-full);
+  transition: width 100ms linear;
+}
+
+.scrub-time-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--color-outline);
+}
+
+/* Controls */
+.audio-controls-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.25rem;
+}
+
+.audio-play-circle-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-full);
+  background: var(--color-primary-container);
+  color: var(--color-on-primary-container);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(229, 169, 90, 0.25);
+  transition: all var(--transition-fast);
+}
+
+.audio-play-circle-btn:hover {
+  background: #f0b467;
+  transform: scale(1.04);
+}
+
+.audio-play-circle-btn:active {
+  transform: scale(0.96);
+}
+
+.audio-secondary-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  color: var(--color-on-surface-variant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.audio-secondary-btn:hover {
+  color: var(--color-on-surface);
+  background: var(--color-surface-container-high);
+}
+
+.speed-badge-btn {
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-container-high);
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  transition: all var(--transition-fast);
+}
+
+.speed-badge-btn:hover {
+  background: var(--color-surface-container-highest);
+}
+
+/* Full variant styles */
+.audio-player-card.full-variant {
+  background: linear-gradient(180deg, var(--color-surface-container-low) 0%, var(--color-surface-container) 100%);
+  padding: 1.5rem;
+  border-radius: var(--radius-2xl);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.audio-player-card.full-variant .audio-play-circle-btn {
+  width: 56px;
+  height: 56px;
+}

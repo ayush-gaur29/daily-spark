@@ -1,0 +1,52 @@
+.empty-state-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  text-align: center;
+}
+
+.empty-state-icon-circle {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-container-high);
+  color: var(--color-outline);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.empty-state-title {
+  font-family: var(--font-editorial);
+  font-size: 22px;
+  line-height: 28px;
+  color: var(--color-on-surface);
+  margin-bottom: 0.5rem;
+}
+
+.empty-state-desc {
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--color-on-surface-variant);
+  max-width: 280px;
+  margin-bottom: 1.25rem;
+}
+
+.empty-state-action-btn {
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary-container);
+  color: var(--color-on-primary-container);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  transition: all var(--transition-fast);
+}
+
+.empty-state-action-btn:hover {
+  background-color: var(--color-primary);
+  transform: scale(1.02);
+}

@@ -1,0 +1,114 @@
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 0.25rem;
+  border-bottom: 1px solid var(--color-border-card);
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  transition: background-color var(--transition-fast);
+}
+
+.settings-row:last-child {
+  border-bottom: none;
+}
+
+.settings-row.clickable {
+  cursor: pointer;
+}
+
+.settings-row.clickable:hover {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+.settings-left-col {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+.settings-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background-color: var(--color-surface-container);
+  color: var(--color-on-surface-variant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.settings-text-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.settings-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-on-surface);
+}
+
+.settings-subtitle {
+  font-size: 12px;
+  color: var(--color-outline);
+}
+
+.settings-right-col {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.settings-badge {
+  font-size: 12px;
+  color: var(--color-primary);
+  font-weight: 500;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-container);
+}
+
+.settings-chevron {
+  color: var(--color-outline);
+  font-size: 18px;
+}
+
+/* Mobile Toggle Switch */
+.settings-toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-container-high);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  border: 1px solid var(--color-border-card);
+}
+
+.settings-toggle-switch.active {
+  background-color: var(--color-primary-container);
+  border-color: var(--color-primary-container);
+}
+
+.settings-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-full);
+  background-color: #ffffff;
+  transition: transform var(--transition-fast);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.settings-toggle-switch.active .settings-toggle-thumb {
+  transform: translateX(20px);
+  background-color: var(--color-on-primary-container);
+}

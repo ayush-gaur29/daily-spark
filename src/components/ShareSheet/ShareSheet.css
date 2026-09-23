@@ -1,0 +1,186 @@
+.share-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.share-modal-container {
+  width: 100%;
+  max-width: 480px;
+  background-color: var(--color-surface-container);
+  border-top-left-radius: var(--radius-2xl);
+  border-top-right-radius: var(--radius-2xl);
+  border: 1px solid var(--color-border-subtle);
+  border-bottom: none;
+  padding: 1.25rem 1.5rem calc(env(safe-area-inset-bottom, 0px) + 1.5rem) 1.5rem;
+  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.share-handle-bar {
+  width: 36px;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-outline-variant);
+  margin: 0 auto 0.25rem auto;
+}
+
+.share-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.share-header-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-on-surface);
+}
+
+.share-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-on-surface-variant);
+  transition: all var(--transition-fast);
+}
+
+.share-close-btn:hover {
+  background-color: var(--color-surface-container-high);
+  color: var(--color-on-surface);
+}
+
+/* Visual share quote card */
+.share-preview-card {
+  background: linear-gradient(145deg, #161a22 0%, #0d1015 100%);
+  border: 1px solid rgba(229, 169, 90, 0.2);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.share-preview-card::after {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 120px;
+  height: 120px;
+  border-radius: var(--radius-full);
+  background: radial-gradient(circle, rgba(229, 169, 90, 0.15), transparent 70%);
+  pointer-events: none;
+}
+
+.share-preview-tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.share-preview-quote {
+  font-family: var(--font-editorial);
+  font-style: italic;
+  font-size: 18px;
+  line-height: 28px;
+  color: var(--color-on-surface);
+}
+
+.share-preview-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border-card);
+}
+
+.share-preview-spark-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-on-surface-variant);
+}
+
+.share-preview-watermark {
+  font-family: var(--font-editorial);
+  font-size: 12px;
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Actions buttons */
+.share-actions-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.share-primary-btn {
+  width: 100%;
+  height: 3rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary-container);
+  color: var(--color-on-primary-container);
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all var(--transition-fast);
+}
+
+.share-primary-btn:hover {
+  background-color: var(--color-primary);
+  transform: scale(0.99);
+}
+
+.share-secondary-btn {
+  width: 100%;
+  height: 3rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-container-high);
+  color: var(--color-on-surface);
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all var(--transition-fast);
+}
+
+.share-secondary-btn:hover {
+  background-color: var(--color-surface-container-highest);
+}
+
+.share-cancel-btn {
+  width: 100%;
+  padding: 0.5rem;
+  color: var(--color-outline);
+  font-size: 13px;
+  font-weight: 500;
+  transition: color var(--transition-fast);
+}
+
+.share-cancel-btn:hover {
+  color: var(--color-on-surface);
+}
