@@ -9,14 +9,14 @@ export const Header = ({ onNavigate, currentRoute, onOpenNotifications, unreadCo
         <button
           className="header-brand"
           onClick={() => onNavigate('today')}
-          aria-label="Daily Spark Home"
+          aria-label="Dr. Cubie Inspiration Home"
         >
           <img
             src="/logo.png"
-            alt="Daily Spark Logo"
+            alt="Dr. Cubie Inspiration Logo"
             className="header-brand-logo-img"
           />
-          <span className="header-brand-title">Daily Spark</span>
+          <span className="header-brand-title">Dr. Cubie Inspiration</span>
         </button>
 
         <div className="header-right-actions">

@@ -7,7 +7,7 @@ export const ShareSheet = () => {
 
   if (!shareModalSpark) return null;
 
-  const quoteText = `"${shareModalSpark.quote}" — ${shareModalSpark.title} (Daily Spark)`;
+  const quoteText = `"${shareModalSpark.quote}" — ${shareModalSpark.title} (Dr. Cubie Inspiration)`;
 
   const handleCopy = async () => {
     try {
@@ -81,10 +81,10 @@ export const ShareSheet = () => {
             <div className="share-preview-watermark">
               <img
                 src="/logo.png"
-                alt="Daily Spark"
+                alt="Dr. Cubie Inspiration"
                 style={{ width: '18px', height: '18px', objectFit: 'contain' }}
               />
-              <span>Daily Spark</span>
+              <span>Dr. Cubie Inspiration</span>
             </div>
           </div>
         </div>

@@ -175,7 +175,7 @@ export const Profile = () => {
           />
           <SettingsRow
             icon="info"
-            title="About Daily Spark"
+            title="About Dr. Cubie Inspiration"
             subtitle="Version 1.2.0 • Mindful Living"
             onClick={() => setActiveDialog('about')}
           />
@@ -206,9 +206,9 @@ export const Profile = () => {
 
             {activeDialog === 'about' && (
               <>
-                <h3 className="profile-dialog-title">About Daily Spark</h3>
+                <h3 className="profile-dialog-title">About Dr. Cubie Inspiration</h3>
                 <p className="profile-dialog-body">
-                  Daily Spark is an intentional sanctuary designed for unhurried introspection and daily wisdom.
+                  Dr. Cubie Inspiration is an intentional sanctuary designed for unhurried introspection and daily wisdom.
                   Built upon the <em>Nocturne Editorial</em> design system, it delivers tactile typography, calm nocturnal palettes, and candlelight amber illumination.
                 </p>
               </>

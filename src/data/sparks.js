@@ -15,7 +15,7 @@ export const INITIAL_SPARKS = [
     conciseTakeaway: 'Attention shapes momentum. What you focus on repeatedly becomes easier to believe, pursue, and create.',
     concisePrompt: "What is one priority you've been avoiding that deserves your full attention?",
     concisePractice: 'Set a 45-minute timer. Silence distractions and give one important task your full attention.',
-    narrator: 'Marcus Vance • Daily Spark Guide',
+    narrator: 'Marcus Vance • Dr. Cubie Inspiration Guide',
     reflection: {
       idea: 'Belief is not an intellectual conviction arrived at through argument; it is the physiological momentum of repeated attention. When you scatter your cognitive energy across twelve divergent anxieties, your subconscious responds with ambivalence. But when you narrow your sight onto a single worthy endeavor, clarity transforms hesitation into decisive execution.',
       whyItMatters: 'The modern world profits from fragmented consciousness. Every notification, ping, and demand bids for fragments of your sovereign will. By intentionally gathering your scattered faculties each morning, you reclaim the authorial power over your day before the world prescribes its agenda.',
@@ -63,7 +63,7 @@ export const INITIAL_SPARKS = [
     conciseTakeaway: 'The body registers genuine inclination long before reason constructs its justifications.',
     concisePrompt: 'Where have you made a sensible choice on paper that your gut continuously rejects?',
     concisePractice: 'Before your next decision today, pause for three breaths to notice your initial gut signal.',
-    narrator: 'Marcus Vance • Daily Spark Guide',
+    narrator: 'Marcus Vance • Dr. Cubie Inspiration Guide',
     reflection: {
       idea: 'Before reason constructs its elaborate justifications, the body has already registered an inclination. This primal "want" is not hedonistic impulse, but the accumulated wisdom of your values seeking expression. When we silence this quiet instinct to appease social harmony, we invite chronic fatigue.',
       whyItMatters: 'High achievers often master rationality at the expense of instinct. By trusting the quiet intuitive signal before the inner critic dissects it, you make decisions that align with your enduring trajectory rather than transient comfort.',
@@ -112,7 +112,7 @@ export const INITIAL_SPARKS = [
     conciseTakeaway: 'Where attention rests, neural pathways strengthen and emotional tone coalesces.',
     concisePrompt: 'How much of your waking reality is chosen by you versus an algorithm?',
     concisePractice: 'Leave your phone in another room during your first hour of focused work today.',
-    narrator: 'Marcus Vance • Daily Spark Guide',
+    narrator: 'Marcus Vance • Dr. Cubie Inspiration Guide',
     reflection: {
       idea: 'Where attention rests, neural pathways strengthen and emotional tone coalesces. To live reactively—answering every vibration and chime—is to surrender your destiny to algorithms designed for engagement rather than fulfillment.',
       whyItMatters: 'Deep contemplation and original insight require sustained uninterrupted dwelling in thought. Depth cannot survive in a state of chronic interruption.',
@@ -186,7 +186,7 @@ export const INITIAL_SPARKS = [
     conciseTakeaway: 'Progress becomes natural when you align daily rituals with your ultimate horizon.',
     concisePrompt: 'What would your days feel like if you prioritized peaceful direction over anxious acceleration?',
     concisePractice: 'Eliminate one non-essential activity today to create room for deep mastery.',
-    narrator: 'Marcus Vance • Daily Spark Guide',
+    narrator: 'Marcus Vance • Dr. Cubie Inspiration Guide',
     reflection: {
       idea: 'We overestimate what urgency achieves in an afternoon and drastically underestimate what unhurried consistency builds across a decade. When you align your daily rituals with your ultimate horizon, friction evaporates.',
       whyItMatters: 'Burnout is rarely caused by hard work; it is caused by working on the wrong things under perpetual emotional strain.',
@@ -210,7 +210,7 @@ export const INITIAL_SPARKS = [
     conciseTakeaway: 'Mastery emerges when the daily ritual of practice itself becomes the reward.',
     concisePrompt: 'Can you fall in love with the unglamorous mechanics of your craft today?',
     concisePractice: 'Identify one routine task and perform it with deliberate presence.',
-    narrator: 'Marcus Vance • Daily Spark Guide',
+    narrator: 'Marcus Vance • Dr. Cubie Inspiration Guide',
     reflection: {
       idea: 'Fixation on distant outcomes leads to postponement of happiness. True mastery emerges when the daily ritual of practice itself becomes the reward, rendering perseverance organic rather than painful.',
       whyItMatters: 'Outcomes are subject to luck and timing; the quality of your daily devotion is entirely within your custody.',
