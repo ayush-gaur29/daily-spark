@@ -5,14 +5,6 @@ import { ImageWithFallback } from '../Common/ImageWithFallback';
 export const Header = ({ onNavigate, currentRoute, onBack, onOpenNotifications, unreadCount = 0 }) => {
   const isDetailPage = currentRoute?.startsWith('spark/');
 
-  const getSubtitle = () => {
-    if (currentRoute === 'today') return 'Today';
-    if (currentRoute === 'saved') return 'Saved';
-    if (currentRoute === 'vip-pass') return 'Vip Pass';
-    if (currentRoute === 'profile') return 'Profile';
-    return '';
-  };
-
   return (
     <header className="app-header">
       <div className="header-main">
@@ -48,12 +40,11 @@ export const Header = ({ onNavigate, currentRoute, onBack, onOpenNotifications, 
               src="/assets/images/brand-logo.png"
               fallbackSrc="https://lh3.googleusercontent.com/aida/AEtjO1VXwfwPa1C6ik_7a14YQlU2VskSqeDobMKZ98zKHrQ2Q1nEyy0ZlXoYmOr2UmBHixyl0w5f9SmG8G7-iZrJUgs_J3WT1aCepQnKDtO71D1XXOYK6BGmWZQWaTH5KmOnim2PkyQbq9zQZS_gw4eepoNxrrnB6kUICMc2CrAzVHTZOn6otp6OGuKYsy9BOMqWhGCoh-E1grwTUD6iorwn6KnH0Yj87FMExfE-MkohdtbeLDetlmQOlzNTYiZp"
               type="logo"
-              alt="Dr. Cubie Inspiration Logo"
+              alt="Dr. Cubie Logo"
               className="header-brand-logo-img"
             />
             <div className="header-brand-text">
               <span className="header-brand-title">Dr. Cubie Inspiration</span>
-              <span className="header-brand-subtitle">{getSubtitle()}</span>
             </div>
           </button>
         )}

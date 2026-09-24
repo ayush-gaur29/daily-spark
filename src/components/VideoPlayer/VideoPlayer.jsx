@@ -28,8 +28,24 @@ export const VideoPlayer = ({
   const [isMuted, setIsMuted] = useState(initialMuted);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showControls, setShowControls] = useState(true);
-  const [hasStarted, setHasStarted] = useState(false);
+  const [hasStarted, setHasStarted] = useState(autoPlay);
   const controlsTimeoutRef = useRef(null);
+
+  // Auto-play when requested
+  useEffect(() => {
+    if (autoPlay && videoRef.current) {
+      setHasStarted(true);
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => setIsPlaying(true))
+          .catch((err) => {
+            console.warn('Playback prevented:', err);
+            setIsPlaying(false);
+          });
+      }
+    }
+  }, [autoPlay, src]);
 
   // Format seconds to mm:ss
   const formatTime = (timeInSeconds) => {

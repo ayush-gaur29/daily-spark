@@ -23,6 +23,24 @@
   border-radius: var(--radius-md);
 }
 
+.stitch-video-player-container.compact .stitch-video-ctrl-btn {
+  width: 26px;
+  height: 26px;
+}
+
+.stitch-video-player-container.compact .stitch-video-ctrl-btn .material-symbols-outlined {
+  font-size: 16px;
+}
+
+.stitch-video-player-container.compact .stitch-video-controls-bar {
+  padding: 0.2rem 0.4rem;
+  gap: 0.2rem;
+}
+
+.stitch-video-player-container.compact .stitch-video-time-display {
+  font-size: 10px;
+}
+
 .stitch-video-element {
   width: 100%;
   height: 100%;
