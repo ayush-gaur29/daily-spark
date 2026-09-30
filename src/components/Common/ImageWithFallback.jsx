@@ -54,6 +54,7 @@ export const ImageWithFallback = ({
           color: '#1E40AF',
           position: 'relative',
           overflow: 'hidden',
+          borderRadius: isAvatar ? 'var(--radius-full, 9999px)' : undefined,
           width: '100%',
           height: '100%',
           ...style

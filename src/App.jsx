@@ -1,21 +1,43 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { SparksProvider } from './context/SparksContext';
 import { AudioProvider } from './context/AudioContext';
+import { AccessControlProvider } from './context/AccessControlContext';
 import { Header } from './components/Header/Header';
 import { BottomNav } from './components/BottomNav/BottomNav';
 import { ShareSheet } from './components/ShareSheet/ShareSheet';
 import { Toast } from './components/Toast/Toast';
-import { NotificationModal } from './components/NotificationModal/NotificationModal';
-import { INITIAL_NOTIFICATIONS } from './data/notifications';
+import { AuthModal } from './components/Auth/AuthModal';
 
 import { Today } from './pages/Today/Today';
 import { Saved } from './pages/Saved/Saved';
 import { VipPass } from './pages/VipPass/VipPass';
 import { SparkDetail } from './pages/SparkDetail/SparkDetail';
+import { VideoDetail } from './pages/VideoDetail/VideoDetail';
+import { AudioDetail } from './pages/AudioDetail/AudioDetail';
 import { Profile } from './pages/Profile/Profile';
+import { Notifications } from './pages/Notifications/Notifications';
+import { Videos } from './pages/Videos/Videos';
+import { Audios } from './pages/Audios/Audios';
+import { Recommendations } from './pages/Recommendations/Recommendations';
 
-export const App = () => {
-  // Routes: 'today' | 'saved' | 'vip-pass' | 'profile' | 'spark/:id'
+import {
+  fetchUserNotifications,
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+  subscribeToUserNotifications,
+  getNotificationRoute
+} from './services/notificationsService';
+import { getUserPreferences, isSparkDeliveredForUser } from './services/userPreferencesService';
+
+/**
+ * AppShell manages application routes, authenticated state coordination,
+ * dynamic notifications, and global layout rendering.
+ */
+const AppShell = () => {
+  const { user, isAuthenticated } = useAuth();
+
+  // Routes: 'today' | 'saved' | 'vip-pass' | 'profile' | 'notifications' | 'spark/:id'
   const [route, setRoute] = useState(() => {
     const hash = window.location.hash.replace('#/', '').replace('#', '');
     return hash || 'today';
@@ -23,10 +45,14 @@ export const App = () => {
 
   const [previousRoute, setPreviousRoute] = useState('today');
 
-  // Notifications state
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
-  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  // Dynamic user notifications state from Supabase
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isNotifPopupOpen, setIsNotifPopupOpen] = useState(false);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const [notificationsError, setNotificationsError] = useState(null);
 
+  // Sync hash changes with app route
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#/', '').replace('#', '');
@@ -39,43 +65,161 @@ export const App = () => {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  const navigateTo = (newRoute) => {
+  const navigateTo = useCallback((newRoute) => {
     if (newRoute !== route) {
       setPreviousRoute(route);
       setRoute(newRoute);
       window.location.hash = `#/${newRoute}`;
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      // Always close popup when navigating
+      setIsNotifPopupOpen(false);
     }
-  };
+  }, [route]);
 
-  const navigateToSpark = (sparkId) => {
+  const navigateToSpark = useCallback((sparkId) => {
     navigateTo(`spark/${sparkId}`);
-  };
+  }, [navigateTo]);
 
-  const handleBack = () => {
-    if (previousRoute && previousRoute !== route && !previousRoute.startsWith('spark/')) {
+  const navigateToVideo = useCallback((videoId) => {
+    navigateTo(`videos/${videoId}`);
+  }, [navigateTo]);
+
+  const navigateToAudio = useCallback((audioId) => {
+    navigateTo(`audios/${audioId}`);
+  }, [navigateTo]);
+
+  const handleBack = useCallback(() => {
+    if (
+      previousRoute &&
+      previousRoute !== route &&
+      !previousRoute.startsWith('spark') &&
+      !previousRoute.startsWith('video') &&
+      !previousRoute.startsWith('audio')
+    ) {
       navigateTo(previousRoute);
     } else {
       navigateTo('today');
     }
-  };
+  }, [previousRoute, route, navigateTo]);
 
-  const handleMarkAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
-  };
+  // Load user notifications from Supabase
+  const loadNotifications = useCallback(async (userId) => {
+    if (!userId) {
+      setNotifications([]);
+      setUnreadCount(0);
+      setLoadingNotifications(false);
+      return;
+    }
 
-  const handleNotificationClick = (item) => {
-    // Mark as read
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === item.id ? { ...n, unread: false } : n))
-    );
-    setIsNotifOpen(false);
-    if (item.route) {
-      navigateTo(item.route);
+    setLoadingNotifications(true);
+    setNotificationsError(null);
+
+    const { data, error } = await fetchUserNotifications(userId);
+    if (error) {
+      console.warn('[App] Error fetching notifications:', error);
+      setNotificationsError(error);
+      setNotifications([]);
+      setUnreadCount(0);
+    } else {
+      const prefs = getUserPreferences(userId);
+      const isDelivered = isSparkDeliveredForUser(prefs?.dailyDeliveryTime);
+      const todayDateStr = new Date().toDateString();
+
+      // Daily Spark notifications visibility follows the user's selected delivery time
+      const visibleList = (data || []).filter((n) => {
+        if (!isDelivered) {
+          const nDate = new Date(n.created_at || n.createdAt);
+          if (nDate.toDateString() === todayDateStr && (n.type === 'spark' || /spark/i.test(n.title || ''))) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      setNotifications(visibleList);
+      const unread = visibleList.filter((n) => !n.is_read).length;
+      setUnreadCount(unread);
+    }
+    setLoadingNotifications(false);
+  }, []);
+
+  // Sync notifications on auth state changes (login / logout) & set up realtime
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) {
+      // Clear notifications on logout
+      setNotifications([]);
+      setUnreadCount(0);
+      setIsNotifPopupOpen(false);
+      setNotificationsError(null);
+      return;
+    }
+
+    // Load notifications for the logged in user
+    loadNotifications(user.id);
+
+    // Re-evaluate notification delivery when user preferences (like spark delivery time) update
+    const handlePrefChange = () => {
+      loadNotifications(user.id);
+    };
+    window.addEventListener('drcubie_preferences_updated', handlePrefChange);
+
+    // Subscribe to realtime updates for this user
+    const subscription = subscribeToUserNotifications(user.id, () => {
+      loadNotifications(user.id);
+    });
+
+    return () => {
+      window.removeEventListener('drcubie_preferences_updated', handlePrefChange);
+      if (subscription && typeof subscription.unsubscribe === 'function') {
+        subscription.unsubscribe();
+      }
+    };
+  }, [isAuthenticated, user?.id, loadNotifications]);
+
+  // Handle individual notification click
+  const handleNotificationClick = async (item) => {
+    if (!item) return;
+
+    // Immediately mark as read optimistically in state
+    if (!item.is_read) {
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === item.id ? { ...n, is_read: true } : n))
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+
+      // Persist to Supabase if authenticated
+      if (user?.id) {
+        markNotificationAsRead(item.id, user.id);
+      }
+    }
+
+    // Close the preview popup
+    setIsNotifPopupOpen(false);
+
+    // Navigate to content destination if present
+    const destination = getNotificationRoute(item);
+    if (destination) {
+      navigateTo(destination);
     }
   };
 
-  const unreadCount = notifications.filter((n) => n.unread).length;
+  // Handle mark all as read
+  const handleMarkAllAsRead = async () => {
+    if (!user?.id) return;
+
+    // Optimistically update all to read
+    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    setUnreadCount(0);
+
+    // Persist to Supabase
+    await markAllNotificationsAsRead(user.id);
+  };
+
+  // View All Notifications full-page transition
+  const handleViewAllNotifications = () => {
+    setIsNotifPopupOpen(false);
+    navigateTo('notifications');
+  };
 
   // Determine active main tab for bottom navigation
   let activeTab = 'today';
@@ -83,81 +227,167 @@ export const App = () => {
   else if (route === 'vip-pass') activeTab = 'vip-pass';
   else if (route === 'profile') activeTab = 'profile';
 
-  const isDetailPage = route.startsWith('spark/');
-  const currentSparkId = isDetailPage ? route.replace('spark/', '') : null;
+  const isSparkDetail = route.startsWith('spark/') || route.startsWith('sparks/');
+  const currentSparkId = isSparkDetail ? route.replace(/^sparks?\//, '') : null;
+
+  const isVideoDetail =
+    (route.startsWith('videos/') && route !== 'videos') ||
+    (route.startsWith('video/') && route !== 'video');
+  const currentVideoId = isVideoDetail ? route.replace(/^videos?\//, '') : null;
+
+  const isAudioDetail =
+    (route.startsWith('audios/') && route !== 'audios') ||
+    (route.startsWith('audio/') && route !== 'audio');
+  const currentAudioId = isAudioDetail ? route.replace(/^audios?\//, '') : null;
 
   return (
-    <SparksProvider>
-      <AudioProvider>
-        <div className="app-wrapper">
-          <div className="app-shell">
-            {/* Top Fixed App Header */}
-            <Header
-              onNavigate={navigateTo}
-              currentRoute={route}
+    <div className="app-wrapper">
+      <div className="app-shell">
+        {/* Top Fixed App Header with Bell and Dropdown Popup */}
+        <Header
+          onNavigate={navigateTo}
+          currentRoute={route}
+          onBack={handleBack}
+          unreadCount={unreadCount}
+          notifications={notifications}
+          isPopupOpen={isNotifPopupOpen}
+          onToggleNotifications={() => setIsNotifPopupOpen((prev) => !prev)}
+          onCloseNotifications={() => setIsNotifPopupOpen(false)}
+          onNotificationClick={handleNotificationClick}
+          onMarkAllAsRead={handleMarkAllAsRead}
+          onViewAllNotifications={handleViewAllNotifications}
+          loadingNotifications={loadingNotifications}
+          notificationsError={notificationsError}
+        />
+
+        {/* Main Page Viewport Container */}
+        <main className="page-container" id="main-content">
+          {route === 'today' && (
+            <Today
+              onNavigateToSpark={navigateToSpark}
+              onNavigateToVideos={() => navigateTo('videos')}
+              onNavigateToAudios={() => navigateTo('audios')}
+              onNavigateToRecommendations={() => navigateTo('recommendations')}
+              onNavigateToVideo={navigateToVideo}
+              onNavigateToAudio={navigateToAudio}
+            />
+          )}
+
+          {route === 'videos' && (
+            <Videos
               onBack={handleBack}
-              onOpenNotifications={() => setIsNotifOpen(true)}
-              unreadCount={unreadCount}
+              onNavigateToSpark={navigateToSpark}
+              onNavigateToVideo={navigateToVideo}
             />
+          )}
 
-            {/* Main Page Viewport Container */}
-            <main className="page-container" id="main-content">
-              {route === 'today' && (
-                <Today
-                  onNavigateToSpark={navigateToSpark}
-                />
-              )}
-
-              {route === 'saved' && (
-                <Saved
-                  onNavigateToSpark={navigateToSpark}
-                  onNavigateToToday={() => navigateTo('today')}
-                  onNavigateToVip={() => navigateTo('vip-pass')}
-                />
-              )}
-
-              {route === 'vip-pass' && (
-                <VipPass
-                  onNavigateToSpark={navigateToSpark}
-                />
-              )}
-
-              {route === 'profile' && (
-                <Profile />
-              )}
-
-              {isDetailPage && (
-                <SparkDetail
-                  sparkId={currentSparkId}
-                  onBack={handleBack}
-                />
-              )}
-            </main>
-
-            {/* Bottom Floating Navigation Dock */}
-            <BottomNav
-              currentRoute={activeTab}
-              onNavigate={navigateTo}
+          {route === 'audios' && (
+            <Audios
+              onBack={handleBack}
+              onNavigateToSpark={navigateToSpark}
+              onNavigateToAudio={navigateToAudio}
             />
+          )}
 
-            {/* Shared Share Modal Sheet */}
-            <ShareSheet />
+          {route === 'recommendations' && (
+            <Recommendations
+              onBack={handleBack}
+              onNavigateToSpark={navigateToSpark}
+              onNavigateToVideo={navigateToVideo}
+              onNavigateToAudio={navigateToAudio}
+            />
+          )}
 
-            {/* Shared Notification Toast */}
-            <Toast />
+          {route === 'saved' && (
+            <Saved
+              onNavigateToSpark={navigateToSpark}
+              onNavigateToToday={() => navigateTo('today')}
+              onNavigateToVip={() => navigateTo('vip-pass')}
+              onNavigateToVideo={navigateToVideo}
+              onNavigateToAudio={navigateToAudio}
+            />
+          )}
 
-            {/* Notification Center Modal Sheet */}
-            <NotificationModal
-              isOpen={isNotifOpen}
-              onClose={() => setIsNotifOpen(false)}
+          {route === 'vip-pass' && (
+            <VipPass
+              onNavigateToSpark={navigateToSpark}
+              onNavigateToVideo={navigateToVideo}
+              onNavigateToAudio={navigateToAudio}
+            />
+          )}
+
+          {(route === 'profile' || route === 'auth' || route === 'signin' || route === 'signup') && (
+            <Profile />
+          )}
+
+          {/* Dedicated Full-Page Notifications Screen */}
+          {route === 'notifications' && (
+            <Notifications
               notifications={notifications}
-              onMarkAllAsRead={handleMarkAllAsRead}
+              loading={loadingNotifications}
+              error={notificationsError}
               onNotificationClick={handleNotificationClick}
+              onMarkAllAsRead={handleMarkAllAsRead}
+              onBack={handleBack}
+              onNavigate={navigateTo}
+              onRefresh={() => user?.id && loadNotifications(user.id)}
             />
-          </div>
-        </div>
-      </AudioProvider>
-    </SparksProvider>
+          )}
+
+          {isSparkDetail && (
+            <SparkDetail
+              sparkId={currentSparkId}
+              onBack={handleBack}
+            />
+          )}
+
+          {isVideoDetail && (
+            <VideoDetail
+              videoId={currentVideoId}
+              onBack={handleBack}
+              onNavigateToSpark={navigateToSpark}
+            />
+          )}
+
+          {isAudioDetail && (
+            <AudioDetail
+              audioId={currentAudioId}
+              onBack={handleBack}
+              onNavigateToSpark={navigateToSpark}
+            />
+          )}
+        </main>
+
+        {/* Bottom Floating Navigation Dock */}
+        <BottomNav
+          currentRoute={activeTab}
+          onNavigate={navigateTo}
+        />
+
+        {/* Shared Share Modal Sheet */}
+        <ShareSheet />
+
+        {/* Shared Notification Toast */}
+        <Toast />
+
+        {/* Shared Auth Modal Sheet */}
+        <AuthModal />
+      </div>
+    </div>
+  );
+};
+
+export const App = () => {
+  return (
+    <AuthProvider>
+      <SparksProvider>
+        <AccessControlProvider>
+          <AudioProvider>
+            <AppShell />
+          </AudioProvider>
+        </AccessControlProvider>
+      </SparksProvider>
+    </AuthProvider>
   );
 };
 

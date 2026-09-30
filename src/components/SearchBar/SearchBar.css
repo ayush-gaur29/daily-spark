@@ -36,7 +36,7 @@
 .search-input-field:focus {
   background-color: var(--color-surface-container-high);
   border-color: var(--color-border-focus);
-  box-shadow: 0 0 16px rgba(229, 169, 90, 0.12);
+  box-shadow: 0 0 12px rgba(30, 64, 175, 0.15);
 }
 
 .search-clear-btn {

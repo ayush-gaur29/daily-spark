@@ -243,8 +243,163 @@
   }
 
   .stitch-video-ctrl-btn {
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
   }
 }
+
+@media (max-width: 360px) {
+  .stitch-video-controls-bar {
+    padding: 0.35rem 0.5rem;
+    gap: 0.25rem;
+  }
+  .stitch-video-ctrl-btn {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+  }
+  .stitch-video-time-display {
+    font-size: 10px;
+  }
+}
+
+.stitch-video-unavailable-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.75);
+  gap: 0.5rem;
+  width: 100%;
+  height: 100%;
+  background: #0F172A;
+}
+
+/* ==========================================================================
+   YouTube-like Fullscreen Adaptation
+   - Adapts to video orientation and device viewport
+   - object-fit: contain to guarantee zero cropping, stretching, or distortion
+   - Complete video frame remains 100% visible
+   - Pure black background (#000000) for clean letterboxing / pillarboxing
+   ========================================================================== */
+
+.stitch-video-player-container:fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  aspect-ratio: auto !important;
+  background-color: #000000 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+
+.stitch-video-player-container:-webkit-full-screen {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  aspect-ratio: auto !important;
+  background-color: #000000 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+
+.stitch-video-player-container.is-fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  aspect-ratio: auto !important;
+  background-color: #000000 !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+
+/* Fallback for when native Fullscreen API is unavailable/restricted */
+.stitch-video-player-container.is-fullscreen:not(:fullscreen):not(:-webkit-full-screen) {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483647 !important;
+}
+
+.stitch-video-player-container::backdrop {
+  background-color: #000000 !important;
+}
+
+/* Ensure video element inside fullscreen fits completely without any cropping or distortion */
+.stitch-video-player-container:fullscreen .stitch-video-element {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  object-fit: contain !important;
+  background-color: #000000 !important;
+  margin: auto !important;
+  aspect-ratio: auto !important;
+}
+
+.stitch-video-player-container:-webkit-full-screen .stitch-video-element {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  object-fit: contain !important;
+  background-color: #000000 !important;
+  margin: auto !important;
+  aspect-ratio: auto !important;
+}
+
+.stitch-video-player-container.is-fullscreen .stitch-video-element {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  object-fit: contain !important;
+  background-color: #000000 !important;
+  margin: auto !important;
+  aspect-ratio: auto !important;
+}
+
+/* Safe area insets for mobile fullscreen controls */
+.stitch-video-player-container:fullscreen .stitch-video-controls-bar,
+.stitch-video-player-container:-webkit-full-screen .stitch-video-controls-bar,
+.stitch-video-player-container.is-fullscreen .stitch-video-controls-bar {
+  padding-bottom: max(0.85rem, env(safe-area-inset-bottom, 0.85rem)) !important;
+  padding-left: max(0.85rem, env(safe-area-inset-left, 0.85rem)) !important;
+  padding-right: max(0.85rem, env(safe-area-inset-right, 0.85rem)) !important;
+  z-index: 2147483647 !important;
+}
+
+/* Ensure poster overlay also adapts cleanly if visible in fullscreen */
+.stitch-video-player-container:fullscreen .stitch-video-poster-overlay,
+.stitch-video-player-container:-webkit-full-screen .stitch-video-poster-overlay,
+.stitch-video-player-container.is-fullscreen .stitch-video-poster-overlay {
+  background-color: rgba(0, 0, 0, 0.45) !important;
+  z-index: 2147483640 !important;
+}
+
 

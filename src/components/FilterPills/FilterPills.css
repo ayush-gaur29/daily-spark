@@ -1,12 +1,12 @@
 .filter-row-container {
   position: relative;
-  width: calc(100% + calc(var(--margin-screen) * 2));
   margin-left: calc(-1 * var(--margin-screen));
   margin-right: calc(-1 * var(--margin-screen));
   padding-left: var(--margin-screen);
   padding-right: var(--margin-screen);
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .filter-pills-scroll {
@@ -45,6 +45,6 @@
 .filter-pill.active {
   background-color: var(--color-primary-container);
   color: var(--color-on-primary-container);
-  box-shadow: 0 0 16px rgba(229, 169, 90, 0.25);
+  box-shadow: 0 2px 8px rgba(0, 40, 142, 0.2);
   font-weight: 600;
 }

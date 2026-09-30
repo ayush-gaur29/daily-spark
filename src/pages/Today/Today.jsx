@@ -1,63 +1,186 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { useSparks } from '../../context/SparksContext';
 import { useAudio } from '../../context/AudioContext';
 import { VideoPlayer } from '../../components/VideoPlayer/VideoPlayer';
 import { ImageWithFallback } from '../../components/Common/ImageWithFallback';
-import { INITIAL_USER } from '../../data/user';
 import { INITIAL_SPARKS } from '../../data/sparks';
-import { INITIAL_COURSES } from '../../data/courses';
-import { TODAY_VIDEOS } from '../../data/videos';
+import { fetchTodayContent, normalizeSpark } from '../../services/sparksService';
+import { fetchVideos, fetchVideoById, normalizeVideo } from '../../services/videosService';
+import { fetchAudios } from '../../services/audiosService';
+import { fetchRecommendations } from '../../services/recommendationsService';
+import { fetchUserActivity, recordContentActivity } from '../../services/activityService';
+import { useAccessControl } from '../../context/AccessControlContext';
+import { getUserPreferences, isSparkDeliveredForUser } from '../../services/userPreferencesService';
 import './Today.css';
 
-// Audio tracks specifically matching the reference cards
-const TODAY_AUDIO_TRACKS = [
-  {
-    id: 'focused-believing',
-    title: 'Focused Believing',
-    author: 'Dr. Cubie • Session',
-    categoryTag: '04:15 • AUDIO',
-    durationTotal: 255,
-    durationText: '04:15',
-    currentSeconds: 84, // 01:24 to match reference
-    sparkId: 'the-architecture-of-quiet-clarity',
-    waveformPattern: [10, 16, 24, 30, 26, 18, 14, 28, 34, 30, 18, 12, 22, 32, 26, 16, 10, 20, 28, 22, 14, 18, 26, 18]
-  },
-  {
-    id: 'morning-mentality',
-    title: 'Morning Mentality',
-    author: 'Dr. Cubie • Contemplation',
-    categoryTag: '08:30 • GUIDED',
-    durationTotal: 510,
-    durationText: '08:30 min',
-    currentSeconds: 0,
-    sparkId: 'the-architecture-of-quiet-clarity',
-    waveformPattern: [14, 20, 28, 22, 16, 24, 32, 26, 18, 12, 20, 30, 24, 16, 12, 18, 24, 20, 14, 16, 22, 18, 14, 10]
-  },
-  {
-    id: 'deep-flow-state',
-    title: 'Deep Flow State',
-    author: 'Dr. Cubie • Focus Session',
-    categoryTag: '05:20 • FOCUS',
-    durationTotal: 320,
-    durationText: '05:20 min',
-    currentSeconds: 0,
-    sparkId: 'the-focus-dividend',
-    waveformPattern: [12, 18, 26, 32, 24, 16, 22, 30, 26, 18, 14, 22, 28, 20, 14, 18, 26, 22, 16, 12, 18, 24, 16, 12]
-  }
-];
+export const Today = ({
+  onNavigateToSpark,
+  onNavigateToVideos,
+  onNavigateToAudios,
+  onNavigateToRecommendations,
+  onNavigateToVideo,
+  onNavigateToAudio
+}) => {
+  const { user, profile, isAuthenticated } = useAuth();
+  const {
+    sparks,
+    toggleSaveContent,
+    isContentSaved,
+    openShare,
+    showToast,
+    loading: sparksLoading
+  } = useSparks();
+  const {
+    currentTrack,
+    isPlaying,
+    playTrack,
+    currentTime,
+    duration: audioDuration,
+    playbackSpeed,
+    cycleSpeed,
+    formatTime,
+    audioUnavailable,
+    audioErrorMsg,
+    clearAudioUnavailable
+  } = useAudio();
 
-export const Today = ({ onNavigateToSpark }) => {
-  const { sparks, toggleSaveSpark, openShare, showToast } = useSparks();
-  const { currentTrack, isPlaying, playTrack, togglePlay, currentTime, playbackSpeed, cycleSpeed, formatTime } = useAudio();
+  const { requireAccess, isVipContent } = useAccessControl();
 
-  // Video playback states (inline in-card playback)
+  // Dynamic Supabase content states
+  const [todayData, setTodayData] = useState({
+    spark: null,
+    scheduledVideo: null,
+    scheduledAudio: null,
+    quote: null,
+    quoteAuthor: 'Dr. Cubie'
+  });
+  const [videos, setVideos] = useState([]);
+  const [audioTracks, setAudioTracks] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
+  const [courseProgress, setCourseProgress] = useState(0);
+  const [contentLoading, setContentLoading] = useState(true);
+
+  // Video playback states
   const [playingVideoId, setPlayingVideoId] = useState(null);
   const [isPlayingContinueVideo, setIsPlayingContinueVideo] = useState(false);
   const [activeVideoModal, setActiveVideoModal] = useState(null);
 
-  // Primary: Today's spark is the first spark ("The Architecture of Quiet Clarity")
-  const todaySpark = sparks[0] || INITIAL_SPARKS[0] || {};
-  const isTodaySaved = !!todaySpark.saved;
+  const lastRecordedVideoProgress = useRef(0);
+
+  // Dynamic user preferences for delivery time
+  const [userPreferences, setUserPreferences] = useState(() => getUserPreferences(user?.id));
+
+  useEffect(() => {
+    setUserPreferences(getUserPreferences(user?.id));
+  }, [user?.id]);
+
+  useEffect(() => {
+    const handlePrefUpdated = (e) => {
+      if (e.detail?.preferences) {
+        setUserPreferences(e.detail.preferences);
+      }
+    };
+    window.addEventListener('drcubie_preferences_updated', handlePrefUpdated);
+    return () => window.removeEventListener('drcubie_preferences_updated', handlePrefUpdated);
+  }, []);
+
+  // 1. Load Today global dynamic content from Supabase and user progress
+  useEffect(() => {
+    let mounted = true;
+
+    const loadData = async () => {
+      try {
+        setContentLoading(true);
+
+        const [todayRes, videosRes, audiosRes, recsRes] = await Promise.all([
+          fetchTodayContent(),
+          fetchVideos(),
+          fetchAudios(),
+          fetchRecommendations()
+        ]);
+
+        if (!mounted) return;
+
+        const scheduledSpark = todayRes?.todaySpark || null;
+        const scheduledVideo = todayRes?.scheduledVideo || scheduledSpark?.video || null;
+        const scheduledAudio = todayRes?.scheduledAudio || scheduledSpark?.audio || null;
+
+        setTodayData({
+          spark: scheduledSpark,
+          scheduledVideo,
+          scheduledAudio,
+          quote: todayRes?.quote || scheduledSpark?.reflection || null,
+          quoteAuthor: todayRes?.quoteAuthor || 'Dr. Cubie'
+        });
+
+        const publishedVideos = Array.isArray(videosRes) ? videosRes : [];
+        setVideos(publishedVideos);
+
+        const publishedAudios = Array.isArray(audiosRes) ? audiosRes : [];
+        setAudioTracks(publishedAudios);
+
+        const publishedRecs = Array.isArray(recsRes) ? recsRes : [];
+        setRecommendations(publishedRecs);
+
+        // Resolve user's actual progress for the CURRENTLY SCHEDULED content from content_activity
+        let initialProgress = 0;
+        const heroContentId = scheduledVideo?.id || scheduledSpark?.db_id || scheduledSpark?.id;
+
+        if (isAuthenticated && user?.id && heroContentId) {
+          try {
+            const activities = await fetchUserActivity(user.id);
+            const matchedActivity = activities.find(
+              (a) =>
+                a.content_id === heroContentId ||
+                (scheduledSpark && (a.content_id === scheduledSpark.db_id || a.content_id === scheduledSpark.id)) ||
+                (scheduledVideo && a.content_id === scheduledVideo.id)
+            );
+
+            if (matchedActivity) {
+              initialProgress = matchedActivity.completed
+                ? 100
+                : Math.min(100, Math.max(0, Math.round(Number(matchedActivity.progress) || 0)));
+            }
+          } catch (err) {
+            console.warn('[Today] Error fetching user content activity for scheduled lesson:', err);
+          }
+        }
+
+        if (mounted) {
+          setCourseProgress(initialProgress);
+          lastRecordedVideoProgress.current = initialProgress;
+        }
+      } catch (err) {
+        console.error('[Today] Error fetching dynamic Supabase content:', err);
+      } finally {
+        if (mounted) {
+          setContentLoading(false);
+        }
+      }
+    };
+
+    loadData();
+
+    return () => {
+      mounted = false;
+    };
+  }, [isAuthenticated, user?.id]);
+
+  // Scheduled content resolved from todayData (from public.daily_content)
+  const scheduledSpark = todayData.spark;
+  const scheduledVideo = todayData.scheduledVideo || scheduledSpark?.video || null;
+  const scheduledAudio = todayData.scheduledAudio || scheduledSpark?.audio || null;
+
+  const heroTitle = scheduledSpark?.title || scheduledVideo?.title || 'Daily Wisdom';
+  const heroCategory = (scheduledVideo?.category || scheduledSpark?.categoryLabel || scheduledSpark?.category || 'MINDFULNESS').toUpperCase();
+  const heroDuration = scheduledVideo?.duration || scheduledSpark?.duration || '0:30';
+  const heroDurationSeconds = scheduledVideo?.durationSeconds || 30;
+  const heroPoster = scheduledVideo?.posterUrl || scheduledVideo?.thumbnail_url || scheduledSpark?.thumbnail_url || scheduledSpark?.image || '/assets/images/hero-quiet-clarity.jpg';
+  const heroVideoUrl = scheduledVideo?.videoUrl || scheduledVideo?.video_url || scheduledSpark?.videoUrl || '';
+  const heroContentId = scheduledVideo?.id || scheduledSpark?.db_id || scheduledSpark?.id;
+  const heroInitialTime = (courseProgress / 100) * heroDurationSeconds;
+  const isHeroSaved = isContentSaved('spark', scheduledSpark?.db_id || scheduledSpark?.id);
 
   const formattedDate = new Intl.DateTimeFormat('en-US', {
     weekday: 'long',
@@ -65,21 +188,59 @@ export const Today = ({ onNavigateToSpark }) => {
     day: 'numeric'
   }).format(new Date());
 
+  // Dynamic user greeting
+  const greetingName =
+    profile?.full_name?.split(' ')[0] ||
+    user?.user_metadata?.full_name?.split(' ')[0] ||
+    (isAuthenticated ? 'Friend' : 'Seeker');
+
   const handleSparkClick = (sparkId) => {
-    if (onNavigateToSpark) {
+    if (onNavigateToSpark && sparkId) {
       onNavigateToSpark(sparkId);
     }
   };
 
-  const handleResumeLesson = (spark) => {
-    // Open full lesson reader
-    handleSparkClick(spark.id || 'the-architecture-of-quiet-clarity');
+  const handleResumeLesson = (e) => {
+    if (e) e.stopPropagation();
+    const heroContent = scheduledVideo || scheduledSpark || {
+      id: heroContentId,
+      title: heroTitle,
+      is_vip: Boolean(scheduledSpark?.is_vip || scheduledVideo?.is_vip)
+    };
+    requireAccess(heroContent, () => {
+      if (scheduledSpark?.slug || scheduledSpark?.id) {
+        handleSparkClick(scheduledSpark.slug || scheduledSpark.id);
+      } else if (heroVideoUrl) {
+        handlePlayContinueVideo();
+      }
+    });
   };
 
   const handlePlayContinueVideo = (e) => {
     if (e) e.stopPropagation();
-    setPlayingVideoId(null);
-    setIsPlayingContinueVideo(true);
+    const heroContent = scheduledVideo || scheduledSpark || {
+      id: heroContentId,
+      title: heroTitle,
+      is_vip: Boolean(scheduledSpark?.is_vip || scheduledVideo?.is_vip)
+    };
+    requireAccess(heroContent, () => {
+      if (heroVideoUrl) {
+        setPlayingVideoId(null);
+        setIsPlayingContinueVideo(true);
+
+        if (isAuthenticated && user?.id && heroContentId) {
+          recordContentActivity({
+            userId: user.id,
+            contentType: scheduledVideo ? 'video' : 'spark',
+            contentId: heroContentId,
+            progress: courseProgress,
+            completed: courseProgress >= 95
+          });
+        }
+      } else if (scheduledSpark?.slug || scheduledSpark?.id) {
+        handleSparkClick(scheduledSpark.slug || scheduledSpark.id);
+      }
+    });
   };
 
   const handleStopContinueVideo = (e) => {
@@ -87,10 +248,85 @@ export const Today = ({ onNavigateToSpark }) => {
     setIsPlayingContinueVideo(false);
   };
 
+  // Video progress reporting callback from VideoPlayer for the scheduled hero lesson
+  const handleContinueVideoProgress = useCallback(
+    ({ currentTime, duration, progressPercent }) => {
+      const rounded = Math.min(100, Math.max(0, Math.round(progressPercent)));
+      setCourseProgress(rounded);
+
+      // Periodically record progress to Supabase content_activity every 10%
+      if (
+        isAuthenticated &&
+        user?.id &&
+        heroContentId &&
+        Math.abs(rounded - lastRecordedVideoProgress.current) >= 10
+      ) {
+        lastRecordedVideoProgress.current = rounded;
+        recordContentActivity({
+          userId: user.id,
+          contentType: scheduledVideo ? 'video' : 'spark',
+          contentId: heroContentId,
+          progress: rounded,
+          completed: rounded >= 95
+        });
+      }
+    },
+    [isAuthenticated, user?.id, heroContentId, scheduledVideo]
+  );
+
+  // When continue video pauses
+  const handleContinueVideoPause = useCallback(
+    ({ currentTime, duration, progressPercent }) => {
+      const rounded = Math.min(100, Math.max(0, Math.round(progressPercent)));
+      setCourseProgress(rounded);
+
+      if (isAuthenticated && user?.id && heroContentId) {
+        lastRecordedVideoProgress.current = rounded;
+        recordContentActivity({
+          userId: user.id,
+          contentType: scheduledVideo ? 'video' : 'spark',
+          contentId: heroContentId,
+          progress: rounded,
+          completed: rounded >= 95
+        });
+      }
+    },
+    [isAuthenticated, user?.id, heroContentId, scheduledVideo]
+  );
+
+  // When continue video finishes
+  const handleContinueVideoEnded = useCallback(() => {
+    setIsPlayingContinueVideo(false);
+    setCourseProgress(100);
+    lastRecordedVideoProgress.current = 100;
+
+    if (isAuthenticated && user?.id && heroContentId) {
+      recordContentActivity({
+        userId: user.id,
+        contentType: scheduledVideo ? 'video' : 'spark',
+        contentId: heroContentId,
+        progress: 100,
+        completed: true
+      });
+    }
+  }, [isAuthenticated, user?.id, heroContentId, scheduledVideo]);
+
   const handlePlayVideoCard = (e, video) => {
     if (e) e.stopPropagation();
-    setIsPlayingContinueVideo(false);
-    setPlayingVideoId(video.id);
+    requireAccess(video, () => {
+      setIsPlayingContinueVideo(false);
+      setPlayingVideoId(video.id);
+
+      if (isAuthenticated && user?.id && video.id) {
+        recordContentActivity({
+          userId: user.id,
+          contentType: 'video',
+          contentId: video.id,
+          progress: 15,
+          completed: false
+        });
+      }
+    });
   };
 
   const handleStopVideoCard = (e) => {
@@ -98,22 +334,84 @@ export const Today = ({ onNavigateToSpark }) => {
     setPlayingVideoId(null);
   };
 
-  const handleWatchVideo = (videoItem) => {
-    setActiveVideoModal({
-      title: videoItem.title,
-      videoUrl: videoItem.videoUrl || '/assets/videos/daily-motivation.mp4',
-      poster: videoItem.posterUrl || todaySpark.image,
-      durationLabel: videoItem.duration,
-      categoryLabel: videoItem.categoryBadge || 'VIDEO',
-      sparkId: videoItem.sparkId || todaySpark.id
+  const handleOpenVideoModal = (video) => {
+    requireAccess(video, () => {
+      setActiveVideoModal(video);
+
+      if (isAuthenticated && user?.id && video.id) {
+        recordContentActivity({
+          userId: user.id,
+          contentType: 'video',
+          contentId: video.id,
+          progress: 15,
+          completed: false
+        });
+      }
     });
   };
 
   const handleAudioCardPlay = (e, audioTrack) => {
-    e.stopPropagation();
-    // Connect to global audio player with corresponding spark
-    const targetSpark = sparks.find((s) => s.id === audioTrack.sparkId) || todaySpark;
-    playTrack(targetSpark);
+    if (e) e.stopPropagation();
+
+    requireAccess(audioTrack, () => {
+      // Directly play the actual audioTrack with its uploaded Supabase storage URL
+      playTrack(audioTrack);
+
+      if (isAuthenticated && user?.id && audioTrack.id) {
+        recordContentActivity({
+          userId: user.id,
+          contentType: 'audio',
+          contentId: audioTrack.id,
+          progress: 10,
+          completed: false
+        });
+      }
+    });
+  };
+
+  const handleVideoCardClick = (video) => {
+    if (onNavigateToVideo && video?.id) {
+      onNavigateToVideo(video.id);
+    } else if (video?.id) {
+      window.location.hash = `#/videos/${video.id}`;
+    }
+  };
+
+  const handleAudioCardClick = (track) => {
+    if (onNavigateToAudio && track?.id) {
+      onNavigateToAudio(track.id);
+    } else if (track?.id) {
+      window.location.hash = `#/audios/${track.id}`;
+    }
+  };
+
+  const handleRecommendationClick = (rec) => {
+    const type = (rec.contentType || 'spark').toLowerCase();
+
+    if (type === 'video') {
+      const vidId = rec.contentId || rec.id;
+      if (onNavigateToVideo) {
+        onNavigateToVideo(vidId);
+      } else {
+        window.location.hash = `#/videos/${vidId}`;
+      }
+      return;
+    }
+
+    if (type === 'audio') {
+      const audId = rec.contentId || rec.id;
+      if (onNavigateToAudio) {
+        onNavigateToAudio(audId);
+      } else {
+        window.location.hash = `#/audios/${audId}`;
+      }
+      return;
+    }
+
+    // Default: spark
+    if (rec.sparkId || rec.contentId || rec.id) {
+      handleSparkClick(rec.sparkId || rec.contentId || rec.id);
+    }
   };
 
   const closeVideoModal = () => {
@@ -126,13 +424,11 @@ export const Today = ({ onNavigateToSpark }) => {
       <section className="today-welcome-section" aria-label="Welcome">
         <div className="today-date-row">
           <span className="today-date-text">{formattedDate}</span>
-
-
         </div>
 
         <div className="today-greeting-row">
           <h1 className="today-greeting-title">
-            Good morning, {INITIAL_USER.firstName}
+            Good morning, {greetingName}
           </h1>
         </div>
 
@@ -148,130 +444,188 @@ export const Today = ({ onNavigateToSpark }) => {
             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>play_circle</span>
             <h3 className="today-section-title">CONTINUE LEARNING</h3>
           </div>
-          <span className="today-done-pill">68% Done</span>
+          <span className="today-done-pill">{courseProgress}% Done</span>
         </div>
 
-        <article className="today-continue-card">
-          {/* Media Header with Japan tea room & mountain view */}
-          <div
-            className={`today-continue-media ${isPlayingContinueVideo ? 'is-playing' : ''}`}
-            onClick={!isPlayingContinueVideo ? handlePlayContinueVideo : undefined}
-            role="region"
-            aria-label={`Lesson video: ${todaySpark.title}`}
-          >
-            {isPlayingContinueVideo ? (
-              <>
-                <VideoPlayer
-                  src={todaySpark.videoUrl || '/assets/videos/daily-motivation.mp4'}
-                  poster={todaySpark.image || '/assets/images/hero-quiet-clarity.jpg'}
-                  title={todaySpark.title}
-                  durationLabel="12:00"
-                  autoPlay={true}
-                  variant="hero"
-                  onEnded={() => setIsPlayingContinueVideo(false)}
-                />
-                <button
-                  className="today-video-inline-close-btn"
-                  onClick={handleStopContinueVideo}
-                  aria-label="Close video player"
-                  title="Close video"
-                >
-                  <span className="material-symbols-outlined">close</span>
-                </button>
-              </>
-            ) : (
-              <>
-                <ImageWithFallback
-                  src={todaySpark.image || '/assets/images/hero-quiet-clarity.jpg'}
-                  fallbackSrc={todaySpark.fallbackImage}
-                  type="spark"
-                  alt="The Architecture of Quiet Clarity"
-                  className="today-continue-img"
-                />
-                <div className="today-continue-media-overlay" />
-
-                <div className="today-continue-media-top">
-                  <span className="today-glass-pill">MODULE 2 • LESSON 4</span>
-                  <span className="today-glass-badge">HD</span>
-                </div>
-
-                <div className="today-continue-play-circle" title="Play Lesson Video">
-                  <span
-                    className="material-symbols-outlined"
-                    style={{ fontSize: '26px', fontVariationSettings: "'FILL' 1" }}
+        {contentLoading ? (
+          <article className="today-continue-card">
+            <div className="today-continue-media skeleton-shimmer" style={{ minHeight: '200px' }} />
+            <div className="today-continue-body">
+              <div className="skeleton-line-sub skeleton-shimmer" style={{ width: '40%', height: '14px', marginBottom: '8px' }} />
+              <div className="skeleton-line-title skeleton-shimmer" style={{ width: '80%', height: '22px', marginBottom: '16px' }} />
+              <div className="today-progress-bar-track skeleton-shimmer" style={{ height: '6px', marginBottom: '16px' }} />
+              <div className="skeleton-shimmer" style={{ height: '44px', borderRadius: '8px' }} />
+            </div>
+          </article>
+        ) : !isSparkDeliveredForUser(userPreferences?.dailyDeliveryTime) ? (
+          <article className="today-continue-card">
+            <div className="today-empty-notice" style={{ padding: '36px 20px', textAlign: 'center' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '36px', color: 'var(--color-primary, #00288e)', marginBottom: '8px' }}>
+                alarm
+              </span>
+              <h4 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-text-primary, #1b1b1f)', marginBottom: '4px' }}>
+                Daily Spark Arrives at {userPreferences?.dailyDeliveryTime || '07:00 AM'}
+              </h4>
+              <p style={{ fontSize: '13px', color: 'var(--color-text-secondary, #444653)', margin: '0 auto', maxWidth: '300px' }}>
+                Your quiet reflection window is scheduled for {userPreferences?.dailyDeliveryTime || '07:00 AM'}. Take a serene breath while today's spark is prepared.
+              </p>
+            </div>
+          </article>
+        ) : !scheduledSpark && !scheduledVideo ? (
+          <article className="today-continue-card">
+            <div className="today-empty-notice" style={{ padding: '36px 20px', textAlign: 'center' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '36px', color: 'var(--color-primary-400)', marginBottom: '8px' }}>
+                calendar_today
+              </span>
+              <h4 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: '4px' }}>
+                Today's content is being prepared
+              </h4>
+              <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', margin: 0 }}>
+                The daily wisdom lesson and practice will be published shortly.
+              </p>
+            </div>
+          </article>
+        ) : (
+          <article className="today-continue-card">
+            {/* Media Header */}
+            <div
+              className={`today-continue-media ${isPlayingContinueVideo ? 'is-playing' : ''}`}
+              onClick={!isPlayingContinueVideo ? handlePlayContinueVideo : undefined}
+              role="region"
+              aria-label={`Lesson video: ${heroTitle}`}
+            >
+              {isPlayingContinueVideo ? (
+                <>
+                  <VideoPlayer
+                    src={heroVideoUrl}
+                    poster={heroPoster}
+                    title={heroTitle}
+                    durationLabel={heroDuration}
+                    autoPlay={true}
+                    initialTime={heroInitialTime}
+                    onProgressUpdate={handleContinueVideoProgress}
+                    onPause={handleContinueVideoPause}
+                    variant="hero"
+                    onEnded={handleContinueVideoEnded}
+                  />
+                  <button
+                    className="today-video-inline-close-btn"
+                    onClick={handleStopContinueVideo}
+                    aria-label="Close video player"
+                    title="Close video"
                   >
+                    <span className="material-symbols-outlined">close</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <ImageWithFallback
+                    src={heroPoster}
+                    fallbackSrc="/assets/images/hero-quiet-clarity.jpg"
+                    type="spark"
+                    alt={heroTitle}
+                    className="today-continue-img"
+                  />
+                  <div className="today-continue-media-overlay" />
+
+                  <div className="today-continue-media-top">
+                    <span className="today-glass-pill">
+                      {heroCategory} • TODAY
+                    </span>
+                    {(scheduledSpark?.is_vip || scheduledVideo?.is_vip) && (
+                      <span className="card-vip-badge font-label-sm">
+                        <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>workspace_premium</span>
+                        VIP
+                      </span>
+                    )}
+                    <span className="today-glass-badge">HD</span>
+                  </div>
+
+                  <div
+                    className="today-continue-play-circle"
+                    title="Play Lesson Video"
+                    onClick={handlePlayContinueVideo}
+                  >
+                    <span
+                      className="material-symbols-outlined"
+                      style={{ fontSize: '26px', fontVariationSettings: "'FILL' 1" }}
+                    >
+                      play_arrow
+                    </span>
+                  </div>
+
+                  <div className="today-continue-media-bottom">
+                    <span className="today-media-stat">
+                      <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>schedule</span>
+                      {heroDuration}
+                    </span>
+                    <span className="today-media-stat">Daily Featured</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Lesson Metadata & Progress */}
+            <div className="today-continue-body">
+              <span className="today-continue-course-tag">
+                DAILY SPARK • {heroCategory}
+              </span>
+
+              <h4
+                className="today-continue-lesson-title"
+                onClick={handleResumeLesson}
+                title="Open lesson details"
+              >
+                {heroTitle}
+              </h4>
+
+              <div className="today-continue-progress-block">
+                <div className="today-continue-progress-labels">
+                  <span className="text-secondary font-medium">Daily Progress</span>
+                  <span className="text-primary font-bold">
+                    {courseProgress >= 100 ? '100% Completed' : `${courseProgress}% Completed`}
+                  </span>
+                </div>
+                <div className="today-progress-bar-track">
+                  <div className="today-progress-bar-fill" style={{ width: `${courseProgress}%` }} />
+                </div>
+              </div>
+
+              <div className="today-continue-actions-row">
+                <button
+                  className="today-resume-btn"
+                  onClick={handleResumeLesson}
+                  aria-label="Resume Lesson"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '20px', fontVariationSettings: "'FILL' 1" }}>
                     play_arrow
                   </span>
-                </div>
+                  <span>Resume Lesson</span>
+                </button>
 
-                <div className="today-continue-media-bottom">
-                  <span className="today-media-stat">
-                    <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>schedule</span>
-                    12 min remaining
-                  </span>
-                  <span className="today-media-stat">Lesson 4 of 6</span>
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Lesson Metadata & Progress */}
-          <div className="today-continue-body">
-            <span className="today-continue-course-tag">
-              COURSE: THE ARCHITECTURE OF QUIET CLARITY
-            </span>
-
-            <h4
-              className="today-continue-lesson-title"
-              onClick={() => handleSparkClick(todaySpark.id)}
-            >
-              Intentional Stillness in High-Stakes Decisions
-            </h4>
-
-            <div className="today-continue-progress-block">
-              <div className="today-continue-progress-labels">
-                <span className="text-secondary font-medium">Course Progress</span>
-                <span className="text-primary font-bold">68% Completed</span>
-              </div>
-              <div className="today-progress-bar-track">
-                <div className="today-progress-bar-fill" style={{ width: '68%' }} />
-              </div>
-            </div>
-
-            <div className="today-continue-actions-row">
-              <button
-                className="today-resume-btn"
-                onClick={handlePlayContinueVideo}
-                aria-label="Resume Lesson"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '20px', fontVariationSettings: "'FILL' 1" }}>
-                  play_arrow
-                </span>
-                <span>Resume Lesson</span>
-              </button>
-
-              <button
-                className={`today-bookmark-square-btn ${isTodaySaved ? 'saved' : ''}`}
-                onClick={() => toggleSaveSpark(todaySpark.id)}
-                aria-label={isTodaySaved ? 'Remove from saved' : 'Save lesson'}
-                title={isTodaySaved ? 'Saved' : 'Save'}
-              >
-                <span
-                  className="material-symbols-outlined"
-                  style={{
-                    fontSize: '22px',
-                    fontVariationSettings: isTodaySaved ? "'FILL' 1" : "'FILL' 0"
-                  }}
+                <button
+                  className={`today-bookmark-square-btn ${isHeroSaved ? 'saved' : ''}`}
+                  onClick={() => toggleSaveContent('spark', scheduledSpark?.db_id || scheduledSpark?.id)}
+                  aria-label={isHeroSaved ? 'Remove from saved' : 'Save lesson'}
+                  title={isHeroSaved ? 'Saved' : 'Save'}
                 >
-                  {isTodaySaved ? 'bookmark' : 'bookmark_border'}
-                </span>
-              </button>
+                  <span
+                    className="material-symbols-outlined"
+                    style={{
+                      fontSize: '22px',
+                      fontVariationSettings: isHeroSaved ? "'FILL' 1" : "'FILL' 0"
+                    }}
+                  >
+                    {isHeroSaved ? 'bookmark' : 'bookmark_border'}
+                  </span>
+                </button>
+              </div>
             </div>
-          </div>
-        </article>
+          </article>
+        )}
       </section>
 
-      {/* 4. VIDEOS SECTION */}
+      {/* 3. VIDEOS SECTION (Connected to public.videos) */}
       <section className="today-videos-section" aria-label="Video Lessons">
         <div className="today-section-header">
           <div className="today-section-title-wrap">
@@ -280,105 +634,116 @@ export const Today = ({ onNavigateToSpark }) => {
           </div>
           <button
             className="today-view-all-btn"
-            onClick={() => handleSparkClick(TODAY_VIDEOS[0]?.sparkId || 'leading-with-poise')}
+            onClick={() => (onNavigateToVideos ? onNavigateToVideos() : null)}
             aria-label="View all videos"
           >
-            <span>View All (14)</span>
+            <span>View All ({videos.length})</span>
             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>arrow_forward</span>
           </button>
         </div>
 
-        <div className="today-horizontal-scroll no-scrollbar" role="region" aria-label="Videos Carousel">
-          {TODAY_VIDEOS.map((video) => {
-            const isPlayingThis = playingVideoId === video.id;
+        {videos.length === 0 && !contentLoading ? (
+          <div className="today-empty-notice">
+            <span className="material-symbols-outlined">smart_display</span>
+            <p>No video lessons available</p>
+          </div>
+        ) : (
+          <div className="today-horizontal-scroll no-scrollbar" role="region" aria-label="Videos Carousel">
+            {videos.map((video) => {
+              const isPlayingThis = playingVideoId === video.id;
 
-            return (
-              <article
-                key={video.id}
-                className={`today-video-card ${isPlayingThis ? 'is-playing' : ''}`}
-              >
-                <div className="today-video-thumb-wrap">
-                  {isPlayingThis ? (
-                    <>
-                      <VideoPlayer
-                        src={video.videoUrl}
-                        poster={video.posterUrl}
-                        title={video.title}
-                        durationLabel={video.duration}
-                        autoPlay={true}
-                        variant="compact"
-                        onEnded={() => setPlayingVideoId(null)}
-                      />
-                      <button
-                        className="today-video-inline-close-btn"
-                        onClick={handleStopVideoCard}
-                        aria-label="Close video player"
-                        title="Close video"
-                      >
-                        <span className="material-symbols-outlined">close</span>
-                      </button>
-                    </>
-                  ) : (
-                    <div
-                      className="today-video-thumb-clickable"
-                      onClick={(e) => handlePlayVideoCard(e, video)}
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`Play ${video.title}`}
-                      onKeyDown={(e) => e.key === 'Enter' && handlePlayVideoCard(e, video)}
-                    >
-                      <ImageWithFallback
-                        src={video.posterUrl}
-                        fallbackSrc={todaySpark.fallbackImage}
-                        type="video"
-                        alt={video.title}
-                        className="today-video-thumb-img"
-                      />
-                      <div className="today-video-thumb-overlay" />
-                      <span className="today-video-badge">{video.categoryBadge}</span>
-
-                      <button
-                        className="today-video-play-btn"
-                        onClick={(e) => handlePlayVideoCard(e, video)}
-                        title={`Watch ${video.title}`}
-                        aria-label={`Watch ${video.title}`}
-                      >
-                        <span
-                          className="material-symbols-outlined"
-                          style={{ fontSize: '18px', fontVariationSettings: "'FILL' 1" }}
-                        >
-                          play_arrow
-                        </span>
-                      </button>
-
-                      <span className="today-video-duration-pill">{video.duration}</span>
-                    </div>
-                  )}
-                </div>
-
-                <div
-                  className="today-video-card-body"
-                  onClick={() => handleSparkClick(video.sparkId)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSparkClick(video.sparkId)}
+              return (
+                <article
+                  key={video.id}
+                  className={`today-video-card ${isPlayingThis ? 'is-playing' : ''}`}
                 >
-                  <h4 className="today-video-title">{video.title}</h4>
-                  <p className="today-video-meta">{video.metadata}</p>
-                </div>
+                  <div className="today-video-thumb-wrap">
+                    {isPlayingThis ? (
+                      <>
+                        <VideoPlayer
+                          content={video}
+                          src={video.videoUrl}
+                          poster={video.posterUrl}
+                          title={video.title}
+                          durationLabel={video.duration}
+                          autoPlay={true}
+                          variant="compact"
+                          onEnded={() => setPlayingVideoId(null)}
+                        />
+                        <button
+                          className="today-video-inline-close-btn"
+                          onClick={handleStopVideoCard}
+                          aria-label="Close video player"
+                          title="Close video"
+                        >
+                          <span className="material-symbols-outlined">close</span>
+                        </button>
+                      </>
+                    ) : (
+                      <div
+                        className="today-video-thumb-clickable"
+                        onClick={() => handleVideoCardClick(video)}
+                        role="button"
+                        tabIndex={0}
+                        aria-label={`View ${video.title} details`}
+                        onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleVideoCardClick(video)}
+                      >
+                        <ImageWithFallback
+                          src={video.posterUrl}
+                          fallbackSrc="/assets/images/hero-quiet-clarity.jpg"
+                          type="video"
+                          alt={video.title}
+                          className="today-video-thumb-img"
+                        />
+                        <div className="today-video-thumb-overlay" />
+                        <span className="today-video-badge">{video.categoryBadge}</span>
+                        {(video.is_vip || video.isVip) && (
+                          <span className="card-vip-badge font-label-sm" style={{ position: 'absolute', top: '8px', right: '8px', zIndex: 2 }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>workspace_premium</span>
+                            VIP
+                          </span>
+                        )}
 
-                {video.progress && (
-                  <div className="today-video-bottom-progress">
-                    <div className="today-video-progress-bar" style={{ width: `${video.progress}%` }} />
+                        <button
+                          type="button"
+                          className="today-video-play-btn"
+                          onClick={(e) => handlePlayVideoCard(e, video)}
+                          title={`Watch ${video.title}`}
+                          aria-label={`Watch ${video.title}`}
+                        >
+                          <span
+                            className="material-symbols-outlined"
+                            style={{ fontSize: '18px', fontVariationSettings: "'FILL' 1" }}
+                          >
+                            play_arrow
+                          </span>
+                        </button>
+
+                        <span className="today-video-duration-pill">{video.duration}</span>
+                      </div>
+                    )}
                   </div>
-                )}
-              </article>
-            );
-          })}
-        </div>
+
+                  <div
+                    className="today-video-card-body"
+                    onClick={() => handleVideoCardClick(video)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleVideoCardClick(video)}
+                  >
+                    <h4 className="today-video-title">
+                      {(video.is_vip || video.isVip) ? `[VIP] ${video.title}` : video.title}
+                    </h4>
+                    <p className="today-video-meta">{video.metadata}</p>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
       </section>
 
-      {/* 5. AUDIO SECTION */}
+      {/* 4. AUDIO SECTION (Connected to public.audios) */}
       <section className="today-audio-section" aria-label="Audio Sessions">
         <div className="today-section-header">
           <div className="today-section-title-wrap">
@@ -387,95 +752,109 @@ export const Today = ({ onNavigateToSpark }) => {
           </div>
           <button
             className="today-view-all-btn"
-            onClick={() => handleSparkClick(todaySpark.id)}
+            onClick={() => (onNavigateToAudios ? onNavigateToAudios() : null)}
             aria-label="View all audio sessions"
           >
-            <span>View All (28)</span>
+            <span>View All ({audioTracks.length})</span>
             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>arrow_forward</span>
           </button>
         </div>
 
-        <div className="today-horizontal-scroll no-scrollbar" role="region" aria-label="Audio Carousel">
-          {TODAY_AUDIO_TRACKS.map((track, idx) => {
-            const isThisTrackPlaying = isPlaying && currentTrack?.id === track.sparkId;
-            const displayTime = isThisTrackPlaying
-              ? `${formatTime(currentTime)} / ${formatTime(track.durationTotal)}`
-              : idx === 0
-                ? '01:24 / 04:15'
-                : track.durationText;
+        {audioTracks.length === 0 && !contentLoading ? (
+          <div className="today-empty-notice">
+            <span className="material-symbols-outlined">headphones</span>
+            <p>No audio sessions available</p>
+          </div>
+        ) : (
+          <div className="today-horizontal-scroll no-scrollbar" role="region" aria-label="Audio Carousel">
+            {audioTracks.map((track) => {
+              const isThisTrackPlaying = isPlaying && (currentTrack?.id === track.id || currentTrack?.db_id === track.id);
+              const displayTime = isThisTrackPlaying
+                ? `${formatTime(currentTime)} / ${formatTime(audioDuration || track.durationTotal)}`
+                : `00:00 / ${track.durationText}`;
 
-            return (
-              <article
-                key={track.id}
-                className="today-audio-card"
-                onClick={(e) => handleAudioCardPlay(e, track)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => e.key === 'Enter' && handleAudioCardPlay(e, track)}
-              >
-                <div className="today-audio-top-row">
-                  <span className="today-audio-category-tag">{track.categoryTag}</span>
-                  <button
-                    className="today-audio-speed-pill"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (cycleSpeed) cycleSpeed();
-                    }}
-                    title="Cycle Playback Speed"
-                  >
-                    {playbackSpeed ? `${playbackSpeed.toFixed(1)}x` : '1.0x'}
-                  </button>
-                </div>
-
-                <h4 className="today-audio-title">{track.title}</h4>
-                <p className="today-audio-author">{track.author}</p>
-
-                {/* Animated Waveform Visualization */}
-                <div
-                  className="today-audio-waveform-container"
-                  title="Interactive Waveform"
-                  onClick={(e) => handleAudioCardPlay(e, track)}
+              return (
+                <article
+                  key={track.id}
+                  className={`today-audio-card ${isThisTrackPlaying ? 'is-playing' : ''}`}
+                  onClick={() => handleAudioCardClick(track)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleAudioCardClick(track)}
                 >
-                  {track.waveformPattern.map((height, barIdx) => {
-                    const isActiveBar = isThisTrackPlaying
-                      ? barIdx < Math.floor((currentTime / track.durationTotal) * track.waveformPattern.length)
-                      : idx === 0 && barIdx < 8;
-
-                    return (
-                      <span
-                        key={barIdx}
-                        className={`today-waveform-bar ${isActiveBar ? 'active' : ''} ${isThisTrackPlaying ? 'animating' : ''}`}
-                        style={{
-                          height: `${height}px`,
-                          animationDelay: `${(barIdx % 5) * 0.15}s`
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-
-                <div className="today-audio-bottom-row">
-                  <span className="today-audio-time">{displayTime}</span>
-                  <button
-                    className="today-audio-play-round-btn"
-                    onClick={(e) => handleAudioCardPlay(e, track)}
-                    aria-label={isThisTrackPlaying ? 'Pause Audio' : 'Play Audio'}
-                  >
-                    <span
-                      className="material-symbols-outlined"
-                      style={{ fontSize: '20px', fontVariationSettings: "'FILL' 1" }}
+                  <div className="today-audio-top-row">
+                    <span className="today-audio-category-tag">{track.categoryTag}</span>
+                    {(track.is_vip || track.isVip) && (
+                      <span className="card-vip-badge font-label-sm">
+                        <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>workspace_premium</span>
+                        VIP
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      className="today-audio-speed-pill"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (cycleSpeed) cycleSpeed();
+                      }}
+                      title="Cycle Playback Speed"
                     >
-                      {isThisTrackPlaying ? 'pause' : 'play_arrow'}
-                    </span>
-                  </button>
-                </div>
-              </article>
-            );
-          })}
-        </div>
+                      {playbackSpeed ? `${playbackSpeed.toFixed(1)}x` : '1.0x'}
+                    </button>
+                  </div>
+
+                  <h4 className="today-audio-title">
+                    {(track.is_vip || track.isVip) ? `[VIP] ${track.title}` : track.title}
+                  </h4>
+                  <p className="today-audio-author">{track.author}</p>
+
+                  {/* Animated Waveform Visualization */}
+                  <div
+                    className="today-audio-waveform-container"
+                    title="Audio Waveform"
+                  >
+                    {(track.waveformPattern || [8, 14, 20, 12, 16, 22, 10, 18, 14, 8]).map((height, barIdx) => {
+                      const isActiveBar = isThisTrackPlaying
+                        ? barIdx < Math.floor((currentTime / (track.durationTotal || 180)) * 10)
+                        : false;
+
+                      return (
+                        <span
+                          key={barIdx}
+                          className={`today-waveform-bar ${isActiveBar ? 'active' : ''} ${isThisTrackPlaying ? 'animating' : ''}`}
+                          style={{
+                            height: `${height}px`,
+                            animationDelay: `${(barIdx % 5) * 0.15}s`
+                          }}
+                        />
+                      );
+                    })}
+                  </div>
+
+                  <div className="today-audio-bottom-row">
+                    <span className="today-audio-time">{displayTime}</span>
+                    <button
+                      type="button"
+                      className="today-audio-play-round-btn"
+                      onClick={(e) => handleAudioCardPlay(e, track)}
+                      aria-label={isThisTrackPlaying ? 'Pause Audio' : 'Play Audio'}
+                    >
+                      <span
+                        className="material-symbols-outlined"
+                        style={{ fontSize: '20px', fontVariationSettings: "'FILL' 1" }}
+                      >
+                        {isThisTrackPlaying ? 'pause' : 'play_arrow'}
+                      </span>
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
       </section>
 
-      {/* 6. DAILY REFLECTION */}
+      {/* 5. DAILY REFLECTION (Connected to Supabase Spark Reflection) */}
       <section className="today-daily-reflection-section" aria-label="Daily Reflection">
         <div className="today-section-header">
           <h3 className="today-section-title">DAILY REFLECTION</h3>
@@ -486,33 +865,33 @@ export const Today = ({ onNavigateToSpark }) => {
           <span className="today-reflection-quote-mark">&ldquo;</span>
 
           <blockquote className="today-reflection-quote">
-            &ldquo;Clarity is not found in doing more, but in stripping away the non-essential.&rdquo;
+            &ldquo;{todayData.quote || scheduledSpark?.quote || scheduledSpark?.reflection || 'Create Space Before You Respond'}&rdquo;
           </blockquote>
 
           <div className="today-reflection-bottom-row">
-            <cite className="today-reflection-author">&mdash; DR. CUBIE</cite>
+            <cite className="today-reflection-author">&mdash; {todayData.quoteAuthor?.toUpperCase() || 'DR. CUBIE'}</cite>
 
             <div className="today-reflection-actions">
               <button
-                className={`today-save-journal-btn ${isTodaySaved ? 'saved' : ''}`}
-                onClick={() => toggleSaveSpark(todaySpark.id)}
-                aria-label={isTodaySaved ? 'Saved to Journal' : 'Save to Journal'}
+                className={`today-save-journal-btn ${isHeroSaved ? 'saved' : ''}`}
+                onClick={() => scheduledSpark && toggleSaveContent('spark', scheduledSpark.db_id || scheduledSpark.id)}
+                aria-label={isHeroSaved ? 'Saved to Journal' : 'Save to Journal'}
               >
                 <span
                   className="material-symbols-outlined"
                   style={{
                     fontSize: '16px',
-                    fontVariationSettings: isTodaySaved ? "'FILL' 1" : "'FILL' 0"
+                    fontVariationSettings: isHeroSaved ? "'FILL' 1" : "'FILL' 0"
                   }}
                 >
-                  {isTodaySaved ? 'bookmark' : 'bookmark_border'}
+                  {isHeroSaved ? 'bookmark' : 'bookmark_border'}
                 </span>
-                <span>Save to Journal</span>
+                <span>{isHeroSaved ? 'Saved to Archive' : 'Save to Archive'}</span>
               </button>
 
               <button
                 className="today-reflection-share-btn"
-                onClick={() => openShare(todaySpark)}
+                onClick={() => scheduledSpark && openShare(scheduledSpark)}
                 aria-label="Share Quote"
                 title="Share"
               >
@@ -525,64 +904,116 @@ export const Today = ({ onNavigateToSpark }) => {
         </article>
       </section>
 
-      {/* 7. MY COURSES */}
-      <section className="today-courses-section" aria-label="My Courses">
+      {/* 6. RECOMMENDED FOR YOU (Connected to public.recommendations — exactly top 3) */}
+      <section className="today-courses-section" aria-label="Recommended For You">
         <div className="today-section-header">
           <div className="today-section-title-wrap">
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>school</span>
-            <h3 className="today-section-title">MY COURSES</h3>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>auto_awesome</span>
+            <h3 className="today-section-title">RECOMMENDED FOR YOU</h3>
           </div>
           <button
             className="today-view-all-btn"
-            onClick={() => handleSparkClick(INITIAL_COURSES[0]?.sparkId || 'leading-with-poise')}
-            aria-label="View all courses"
+            onClick={() => (onNavigateToRecommendations ? onNavigateToRecommendations() : null)}
+            aria-label="View all recommendations"
           >
-            <span>View All</span>
+            <span>View All ({recommendations.length})</span>
             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>arrow_forward</span>
           </button>
         </div>
 
-        <div className="today-courses-list">
-          {INITIAL_COURSES.map((course) => (
-            <article key={course.id} className="today-course-card">
-              <div className="today-course-top-row">
-                <span className="today-course-track-pill">{course.trackBadge}</span>
-                <span className="today-course-modules-count">{course.modulesText}</span>
-              </div>
+        {recommendations.length === 0 && !contentLoading ? (
+          <div className="today-empty-notice">
+            <span className="material-symbols-outlined">auto_awesome</span>
+            <p>No recommendations available</p>
+          </div>
+        ) : (
+          <div className="today-horizontal-scroll no-scrollbar" role="region" aria-label="Recommendations Carousel">
+            {recommendations.slice(0, 3).map((rec) => {
+              const contentTypeLabel =
+                rec.contentType === 'video'
+                  ? 'Video'
+                  : rec.contentType === 'audio'
+                    ? 'Audio'
+                    : 'Spark';
+              const contentTypeIcon =
+                rec.contentType === 'video'
+                  ? 'smart_display'
+                  : rec.contentType === 'audio'
+                    ? 'headphones'
+                    : 'menu_book';
+              const actionLabel =
+                rec.contentType === 'video'
+                  ? 'Watch'
+                  : rec.contentType === 'audio'
+                    ? 'Listen'
+                    : 'Explore';
 
-              <h4 className="today-course-title">{course.title}</h4>
-
-              <div className="today-course-progress-block">
-                <div className="today-course-progress-labels">
-                  <span className="text-secondary font-medium">Progress</span>
-                  <span className="text-primary font-bold">{course.progressPercent}%</span>
-                </div>
-                <div className="today-progress-bar-track">
-                  <div
-                    className="today-progress-bar-fill"
-                    style={{ width: `${course.progressPercent}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="today-course-bottom-row">
-                <span className="today-course-next-lesson">
-                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>schedule</span>
-                  {course.nextLesson}
-                </span>
-
-                <button
-                  className="today-course-continue-btn"
-                  onClick={() => handleSparkClick(course.sparkId)}
-                  aria-label={`Continue ${course.title}`}
+              return (
+                <article
+                  key={rec.id}
+                  className="today-rec-card btn-pressable"
+                  onClick={() => handleRecommendationClick(rec)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleRecommendationClick(rec)}
+                  aria-label={`${actionLabel} ${rec.title}`}
                 >
-                  <span>Continue</span>
-                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>arrow_forward</span>
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
+                  <div className="today-rec-thumb-wrap">
+                    <ImageWithFallback
+                      src={rec.posterUrl || rec.coverUrl}
+                      fallbackSrc="/assets/images/hero-quiet-clarity.jpg"
+                      type="spark"
+                      alt={rec.title}
+                      className="today-rec-thumb-img"
+                    />
+                    <div className="today-rec-thumb-overlay" />
+
+                    <div className="today-rec-badges-row">
+                      <span className="today-rec-category-badge">
+                        {(rec.category || 'Mindfulness').toUpperCase()}
+                      </span>
+                      {(rec.is_vip || rec.isVip) && (
+                        <span className="card-vip-badge font-label-sm" style={{ padding: '0.12rem 0.4rem', fontSize: '8.5px' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: '10px' }}>workspace_premium</span>
+                          VIP
+                        </span>
+                      )}
+                      <span className={`today-rec-type-badge ${rec.contentType || 'spark'}`}>
+                        <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>
+                          {contentTypeIcon}
+                        </span>
+                        <span>{contentTypeLabel}</span>
+                      </span>
+                    </div>
+
+                    <span className="today-rec-duration-pill">
+                      {rec.duration || (rec.contentType === 'video' ? '0:30' : '3 min')}
+                    </span>
+                  </div>
+
+                  <div className="today-rec-card-body">
+                    <h4 className="today-rec-title" title={rec.title}>
+                      {(rec.is_vip || rec.isVip) ? `[VIP] ${rec.title}` : rec.title}
+                    </h4>
+
+                    <div className="today-rec-footer-row">
+                      <span className="today-rec-meta">
+                        {rec.category || 'Wisdom'} • {rec.duration || '3 min'}
+                      </span>
+
+                      <span className="today-rec-action-link">
+                        <span>{actionLabel}</span>
+                        <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
+                          arrow_forward
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       {/* Video Modal Player */}
@@ -597,48 +1028,53 @@ export const Today = ({ onNavigateToSpark }) => {
           >
             <div className="video-modal-header">
               <div className="video-modal-badge font-label-sm">
-                {activeVideoModal.categoryLabel}
+                {(activeVideoModal.category || 'Mindfulness').toUpperCase()}
               </div>
               <button
                 className="video-modal-close-btn btn-pressable"
                 onClick={closeVideoModal}
-                aria-label="Close video player"
+                aria-label="Close video"
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-
-            <div className="video-modal-player-viewport">
+            <div className="video-modal-player-wrap">
               <VideoPlayer
                 src={activeVideoModal.videoUrl}
-                poster={activeVideoModal.poster}
+                poster={activeVideoModal.posterUrl || activeVideoModal.poster}
                 title={activeVideoModal.title}
-                durationLabel={activeVideoModal.durationLabel}
+                durationLabel={activeVideoModal.duration || activeVideoModal.durationLabel}
                 autoPlay={true}
-                variant="hero"
+                variant="default"
+                onEnded={() => {
+                  if (isAuthenticated && user?.id && activeVideoModal.id) {
+                    recordContentActivity({
+                      userId: user.id,
+                      contentType: 'video',
+                      contentId: activeVideoModal.id,
+                      progress: 100,
+                      completed: true
+                    });
+                  }
+                }}
               />
             </div>
-
-            <div className="video-modal-body">
-              <h3 className="video-modal-title font-headline-md">
-                {activeVideoModal.title}
-              </h3>
-
-              <div className="video-modal-controls-row" style={{ marginTop: '1rem' }}>
+            <div className="video-modal-footer">
+              <h3 className="video-modal-title font-title-lg">{activeVideoModal.title}</h3>
+              {activeVideoModal.sparkId && (
                 <button
-                  className="video-modal-read-btn btn-pressable"
+                  className="video-modal-detail-btn font-label-md btn-pressable"
                   onClick={() => {
                     closeVideoModal();
                     handleSparkClick(activeVideoModal.sparkId);
                   }}
-                  style={{ width: '100%' }}
                 >
-                  <span>Open Full Lesson</span>
+                  <span>Read Full Lesson</span>
                   <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
                     arrow_forward
                   </span>
                 </button>
-              </div>
+              )}
             </div>
           </div>
         </div>

@@ -1,48 +1,33 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { INITIAL_SPARKS } from '../data/sparks';
+import { fetchSparks } from '../services/sparksService';
+import { fetchUserSavedContent, toggleUserSavedContent } from '../services/savedContentService';
+import { useAuth } from './AuthContext';
 
 const SparksContext = createContext();
 
-const SCHEMA_VERSION = 'v2.3';
+const SCHEMA_VERSION = 'v3.0-supabase';
 
 export const SparksProvider = ({ children }) => {
+  const { user, isAuthenticated } = useAuth();
+
   const [sparks, setSparks] = useState(() => {
     try {
-      const version = localStorage.getItem('daily_spark_schema_version');
       const stored = localStorage.getItem('daily_spark_items');
-
-      if (version === SCHEMA_VERSION && stored) {
+      if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed;
         }
       }
-
-      // Upgrade/migrate while preserving saved state
-      let savedIds = new Set();
-      if (stored) {
-        try {
-          const oldItems = JSON.parse(stored);
-          if (Array.isArray(oldItems)) {
-            oldItems.filter((i) => i.saved).forEach((i) => savedIds.add(i.id));
-          }
-        } catch {
-          // ignore
-        }
-      }
-
-      const freshSparks = INITIAL_SPARKS.map((s) => ({
-        ...s,
-        saved: savedIds.has(s.id) ? true : s.saved
-      }));
-
-      localStorage.setItem('daily_spark_schema_version', SCHEMA_VERSION);
-      localStorage.setItem('daily_spark_items', JSON.stringify(freshSparks));
-      return freshSparks;
+      return INITIAL_SPARKS;
     } catch {
       return INITIAL_SPARKS;
     }
   });
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -58,14 +43,63 @@ export const SparksProvider = ({ children }) => {
     }
   });
 
-  useEffect(() => {
+  /**
+   * Load sparks from Supabase and synchronize with user saved bookmarks
+   */
+  const loadSparks = useCallback(async () => {
     try {
-      localStorage.setItem('daily_spark_items', JSON.stringify(sparks));
-    } catch (e) {
-      console.warn('LocalStorage save failed', e);
-    }
-  }, [sparks]);
+      setLoading(true);
+      setError(null);
 
+      // 1. Fetch published sparks from Supabase
+      const dbSparks = await fetchSparks();
+
+      // 2. If authenticated, fetch user saved items from public.saved_content
+      let userSavedSet = new Set();
+      const newSavedMap = new Map();
+      if (isAuthenticated && user?.id) {
+        const savedRecords = await fetchUserSavedContent(user.id);
+        savedRecords.forEach((rec) => {
+          if (rec.content_id) {
+            userSavedSet.add(rec.content_id);
+            newSavedMap.set(`${rec.content_type}:${rec.content_id}`, true);
+          }
+        });
+      }
+      setSavedItemsMap(newSavedMap);
+
+      // 3. Merge saved state per user
+      const mergedSparks = dbSparks.map((spark) => {
+        const isUserSaved =
+          userSavedSet.has(spark.db_id) ||
+          userSavedSet.has(spark.id) ||
+          userSavedSet.has(spark.slug) ||
+          newSavedMap.has(`spark:${spark.db_id}`) ||
+          newSavedMap.has(`spark:${spark.id}`);
+
+        return {
+          ...spark,
+          saved: isAuthenticated ? isUserSaved : false
+        };
+      });
+
+      setSparks(mergedSparks);
+      localStorage.setItem('daily_spark_items', JSON.stringify(mergedSparks));
+      localStorage.setItem('daily_spark_schema_version', SCHEMA_VERSION);
+    } catch (err) {
+      console.warn('[SparksContext] loadSparks note:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated, user?.id]);
+
+  // Initial load and reload when auth changes
+  useEffect(() => {
+    loadSparks();
+  }, [loadSparks]);
+
+  // Cache journal notes
   useEffect(() => {
     try {
       localStorage.setItem('daily_spark_notes', JSON.stringify(journalNotes));
@@ -74,17 +108,86 @@ export const SparksProvider = ({ children }) => {
     }
   }, [journalNotes]);
 
-  const toggleSaveSpark = (id) => {
-    setSparks((prev) =>
-      prev.map((spark) => {
-        if (spark.id === id) {
-          const newSaved = !spark.saved;
-          showToast(newSaved ? 'Saved to Personal Archive' : 'Removed from Saved Sparks');
-          return { ...spark, saved: newSaved };
-        }
-        return spark;
-      })
-    );
+  const [savedItemsMap, setSavedItemsMap] = useState(new Map());
+
+  const isContentSaved = useCallback(
+    (contentType, contentId) => {
+      if (!contentId) return false;
+      const key = `${contentType}:${contentId}`;
+      if (savedItemsMap.has(key)) return true;
+      if (contentType === 'spark') {
+        const spark = sparks.find((s) => s.id === contentId || s.db_id === contentId);
+        return Boolean(spark?.saved);
+      }
+      return false;
+    },
+    [savedItemsMap, sparks]
+  );
+
+  /**
+   * Universal toggle save bookmark for any content type (spark, video, audio)
+   */
+  const toggleSaveContent = async (contentType = 'spark', contentId) => {
+    if (!contentId) return;
+
+    let targetSpark = null;
+    let finalId = contentId;
+
+    if (contentType === 'spark') {
+      targetSpark = sparks.find((s) => s.id === contentId || s.db_id === contentId);
+      if (targetSpark?.db_id) {
+        finalId = targetSpark.db_id;
+      }
+    }
+
+    const key = `${contentType}:${finalId}`;
+    const currentlySaved = isContentSaved(contentType, finalId) || (targetSpark ? targetSpark.saved : false);
+    const nextSaved = !currentlySaved;
+
+    // Optimistically update map
+    setSavedItemsMap((prev) => {
+      const next = new Map(prev);
+      if (nextSaved) {
+        next.set(key, true);
+        if (targetSpark?.id) next.set(`${contentType}:${targetSpark.id}`, true);
+      } else {
+        next.delete(key);
+        if (targetSpark?.id) next.delete(`${contentType}:${targetSpark.id}`);
+      }
+      return next;
+    });
+
+    // If spark, also update sparks array
+    if (contentType === 'spark') {
+      setSparks((prev) =>
+        prev.map((s) => {
+          if (s.id === contentId || s.db_id === contentId || (targetSpark && s.id === targetSpark.id)) {
+            return { ...s, saved: nextSaved };
+          }
+          return s;
+        })
+      );
+    }
+
+    showToast(nextSaved ? 'Saved to Personal Archive' : 'Removed from Saved Items');
+
+    // Persist to Supabase if authenticated
+    if (isAuthenticated && user?.id) {
+      try {
+        await toggleUserSavedContent(user.id, contentType, finalId, currentlySaved);
+      } catch (err) {
+        console.warn('[SparksContext] toggleSaveContent remote error:', err);
+      }
+    }
+  };
+
+  /**
+   * Backward-compatible toggle save bookmark for a spark
+   */
+  const toggleSaveSpark = async (id) => {
+    const targetSpark = sparks.find((s) => s.id === id || s.db_id === id);
+    const contentId = targetSpark?.db_id || id;
+    await toggleSaveContent('spark', contentId);
   };
 
   const saveJournalNote = (sparkId, note) => {
@@ -111,13 +214,12 @@ export const SparksProvider = ({ children }) => {
   };
 
   const resetData = () => {
-    setSparks(INITIAL_SPARKS);
+    loadSparks();
     setJournalNotes({});
     setSearchQuery('');
     setActiveCategory('all');
-    localStorage.removeItem('daily_spark_items');
     localStorage.removeItem('daily_spark_notes');
-    showToast('Archive reset to default');
+    showToast('Archive refreshed from Supabase');
   };
 
   const savedSparksCount = sparks.filter((s) => s.saved).length;
@@ -126,8 +228,13 @@ export const SparksProvider = ({ children }) => {
     <SparksContext.Provider
       value={{
         sparks,
+        loading,
+        error,
+        refreshSparks: loadSparks,
         savedSparksCount,
         toggleSaveSpark,
+        toggleSaveContent,
+        isContentSaved,
         activeCategory,
         setActiveCategory,
         searchQuery,

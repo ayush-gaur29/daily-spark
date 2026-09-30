@@ -1,9 +1,41 @@
-import React from 'react';
-import { INITIAL_USER } from '../../data/user';
+import React, { useRef } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { ImageWithFallback } from '../Common/ImageWithFallback';
+import { NotificationPopup } from '../NotificationPopup/NotificationPopup';
 
-export const Header = ({ onNavigate, currentRoute, onBack, onOpenNotifications, unreadCount = 0 }) => {
+export const Header = ({
+  onNavigate,
+  currentRoute,
+  onBack,
+  onOpenNotifications,
+  unreadCount = 0,
+  notifications = [],
+  isPopupOpen = false,
+  onToggleNotifications,
+  onCloseNotifications,
+  onNotificationClick,
+  onMarkAllAsRead,
+  onViewAllNotifications,
+  loadingNotifications = false,
+  notificationsError = null
+}) => {
+  const { user, profile, isAuthenticated } = useAuth();
+  const bellButtonRef = useRef(null);
+
+  const displayName = isAuthenticated
+    ? (profile?.full_name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User')
+    : '';
+  const displayAvatar = isAuthenticated ? (profile?.avatar_url || null) : null;
   const isDetailPage = currentRoute?.startsWith('spark/');
+
+  const handleBellClick = () => {
+    if (onToggleNotifications) {
+      onToggleNotifications();
+    } else if (onOpenNotifications) {
+      onOpenNotifications();
+    }
+  };
+
 
   return (
     <header className="app-header">
@@ -50,43 +82,85 @@ export const Header = ({ onNavigate, currentRoute, onBack, onOpenNotifications, 
         )}
 
         <div className="header-right-actions">
-          {/* Notification Button */}
+          {/* Notification Button & Popup */}
           {!isDetailPage && (
-            <button
-              className="header-notif-btn btn-pressable"
-              onClick={onOpenNotifications}
-              aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
-              title="Notifications"
-            >
-              <span
-                className="material-symbols-outlined"
-                style={{
-                  fontSize: '22px',
-                  fontVariationSettings: unreadCount > 0 ? "'FILL' 1" : "'FILL' 0"
-                }}
+            <div className="header-notif-wrapper" style={{ position: 'relative' }}>
+              <button
+                ref={bellButtonRef}
+                className="header-notif-btn btn-pressable"
+                onClick={handleBellClick}
+                aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
+                aria-expanded={isPopupOpen}
+                title="Notifications"
+                id="header-notification-bell-btn"
               >
-                notifications
-              </span>
-              {unreadCount > 0 && <span className="header-notif-dot" />}
-            </button>
+                <span
+                  className="material-symbols-outlined"
+                  style={{
+                    fontSize: '22px',
+                    fontVariationSettings: unreadCount > 0 ? "'FILL' 1" : "'FILL' 0"
+                  }}
+                >
+                  notifications
+                </span>
+                {unreadCount > 0 && <span className="header-notif-dot" />}
+              </button>
+
+              <NotificationPopup
+                isOpen={isPopupOpen}
+                onClose={onCloseNotifications}
+                notifications={notifications}
+                unreadCount={unreadCount}
+                loading={loadingNotifications}
+                error={notificationsError}
+                onNotificationClick={onNotificationClick}
+                onMarkAllAsRead={onMarkAllAsRead}
+                onViewAll={onViewAllNotifications}
+                bellButtonRef={bellButtonRef}
+              />
+            </div>
           )}
+
 
           {/* Profile Avatar Button */}
           <button
             className="profile-avatar-btn btn-pressable"
             onClick={() => onNavigate('profile')}
-            aria-label="Open Profile"
+            aria-label={isAuthenticated ? `Open Profile (${displayName})` : 'Sign In / Open Profile'}
+            title={isAuthenticated ? (displayName || 'Profile') : 'Sign In'}
             style={{
               outline: currentRoute === 'profile' ? '2px solid rgba(255,255,255,0.8)' : 'none'
             }}
           >
-            <ImageWithFallback
-              src={INITIAL_USER.avatar}
-              fallbackSrc={INITIAL_USER.avatarFallback}
-              type="avatar"
-              alt={`${INITIAL_USER.name} Profile`}
-              className="profile-avatar-img"
-            />
+            {isAuthenticated ? (
+              displayAvatar ? (
+                <ImageWithFallback
+                  src={displayAvatar}
+                  fallbackSrc={null}
+                  type="avatar"
+                  alt={`${displayName || 'User'} Profile`}
+                  className="profile-avatar-img"
+                />
+              ) : (
+                <div
+                  className="profile-avatar-placeholder authenticated"
+                  aria-label={`${displayName || 'User'} Profile`}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+                    person
+                  </span>
+                </div>
+              )
+            ) : (
+              <div
+                className="profile-avatar-unauth"
+                aria-label="Sign In"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
+                  person
+                </span>
+              </div>
+            )}
           </button>
         </div>
       </div>

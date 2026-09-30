@@ -47,8 +47,48 @@ export const VIDEOS = {
     durationSeconds: 80,
     videoUrl: '/assets/videos/evening-reflection.mp4',
     posterUrl: '/assets/images/spark-aligning-intentions.jpg'
+  },
+  'mindset-shift': {
+    id: 'mindset-shift',
+    title: 'Mindset Shift',
+    subtitle: 'Reframing obstacles into cognitive stepping stones for sustainable growth.',
+    category: 'Mindset',
+    categoryLabel: 'MINDSET',
+    duration: '1:15',
+    durationSeconds: 75,
+    videoUrl: '/assets/videos/focus-reset.mp4',
+    posterUrl: '/assets/images/spark-leading-poise.jpg',
+    sparkId: 'leading-with-poise'
   }
 };
+
+export const ALL_VIDEOS = [
+  {
+    ...VIDEOS['daily-motivation'],
+    sparkId: 'the-architecture-of-quiet-clarity',
+    description: 'Why intentional stillness builds resilient decisions in demanding environments.'
+  },
+  {
+    ...VIDEOS['focus-reset'],
+    sparkId: 'the-focus-dividend',
+    description: 'Single-task immersion and attention realignment under cognitive overload.'
+  },
+  {
+    ...VIDEOS['confidence-practice'],
+    sparkId: 'leading-with-poise',
+    description: 'Cultivating emotional poise and grounded presence in high-stakes moments.'
+  },
+  {
+    ...VIDEOS['mindset-shift'],
+    sparkId: 'leading-with-poise',
+    description: 'Transforming friction and mental resistance into deliberate creative clarity.'
+  },
+  {
+    ...VIDEOS['evening-reflection'],
+    sparkId: 'aligning-intentions',
+    description: 'Decompressing cognitive load and setting clear boundaries between effort and rest.'
+  }
+];
 
 export const VIP_VIDEOS = [
   VIDEOS['focus-reset'],
@@ -61,6 +101,7 @@ export const TODAY_VIDEOS = [
     id: 'decisive-leadership',
     title: 'Decisive Leadership Under Uncertainty',
     categoryBadge: 'KEYNOTE',
+    category: 'Leadership',
     metadata: 'HD Video • Keynote',
     duration: '04:45',
     posterUrl: '/assets/images/spark-leading-poise.jpg',
@@ -72,6 +113,7 @@ export const TODAY_VIDEOS = [
     id: 'the-focus-divide',
     title: 'The Focus Dividend & Immersion',
     categoryBadge: 'FOCUS',
+    category: 'Focus',
     metadata: 'Executive Focus • HD Video',
     duration: '01:05',
     posterUrl: '/assets/images/spark-focus-dividend.jpg',
@@ -83,6 +125,7 @@ export const TODAY_VIDEOS = [
     id: 'quiet-clarity-action',
     title: 'Quiet Clarity in Action',
     categoryBadge: 'MINDFULNESS',
+    category: 'Mindfulness',
     metadata: 'HD Video • Daily Reset',
     duration: '00:30',
     posterUrl: '/assets/images/hero-quiet-clarity.jpg',
@@ -94,6 +137,7 @@ export const TODAY_VIDEOS = [
     id: 'evening-perspective',
     title: 'Evening Perspective & Alignment',
     categoryBadge: 'REFLECTION',
+    category: 'Reflection',
     metadata: 'HD Video • Reflection',
     duration: '01:20',
     posterUrl: '/assets/images/spark-aligning-intentions.jpg',
@@ -102,4 +146,5 @@ export const TODAY_VIDEOS = [
     sparkId: 'aligning-intentions'
   }
 ];
+
 

@@ -1,26 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
 import { useSparks } from '../../context/SparksContext';
 import { AudioPlayer } from '../../components/AudioPlayer/AudioPlayer';
 import { VideoPlayer } from '../../components/VideoPlayer/VideoPlayer';
 import { ImageWithFallback } from '../../components/Common/ImageWithFallback';
+import { fetchSparkById } from '../../services/sparksService';
+import { recordContentActivity } from '../../services/activityService';
 import './SparkDetail.css';
 
 export const SparkDetail = ({ sparkId, onBack }) => {
+  const { user, isAuthenticated } = useAuth();
   const {
     sparks,
-    toggleSaveSpark,
+    toggleSaveContent,
+    isContentSaved,
     openShare,
     journalNotes,
     saveJournalNote,
     showToast
   } = useSparks();
 
-  const spark = sparks.find((s) => s.id === sparkId) || sparks[0];
-  const isSaved = !!spark?.saved;
+  // Find spark in loaded sparks context or fall back
+  const contextSpark = sparks.find(
+    (s) => s.id === sparkId || s.db_id === sparkId || s.slug === sparkId
+  );
+
+  const [spark, setSpark] = useState(contextSpark || sparks[0] || null);
+
+  // If specific spark wasn't in cache, fetch directly from Supabase
+  useEffect(() => {
+    let mounted = true;
+
+    if (contextSpark) {
+      setSpark(contextSpark);
+    } else if (sparkId) {
+      fetchSparkById(sparkId).then((fetched) => {
+        if (mounted && fetched) {
+          setSpark(fetched);
+        }
+      });
+    }
+
+    return () => {
+      mounted = false;
+    };
+  }, [sparkId, contextSpark]);
+
+  // Record user activity in public.content_activity
+  useEffect(() => {
+    if (isAuthenticated && user?.id && spark) {
+      recordContentActivity({
+        userId: user.id,
+        contentType: 'spark',
+        contentId: spark.db_id || spark.id,
+        progress: 25,
+        completed: false
+      });
+    }
+  }, [isAuthenticated, user?.id, spark?.id]);
+
+  const isSaved = isContentSaved('spark', spark?.db_id || spark?.id);
 
   const [noteText, setNoteText] = useState(journalNotes[spark?.id] || '');
   const [hasResonated, setHasResonated] = useState(false);
   const [showNoteForm, setShowNoteForm] = useState(false);
+
+  useEffect(() => {
+    if (spark?.id) {
+      setNoteText(journalNotes[spark.id] || '');
+    }
+  }, [spark?.id, journalNotes]);
 
   const handleSaveNote = (e) => {
     e.preventDefault();
@@ -34,7 +83,13 @@ export const SparkDetail = ({ sparkId, onBack }) => {
     showToast(!hasResonated ? 'Thank you for reflecting with us' : 'Resonance removed');
   };
 
-  if (!spark) return null;
+  if (!spark) {
+    return (
+      <div className="spark-detail-screen animate-fade-in" style={{ padding: '60px 16px', textAlign: 'center' }}>
+        <p className="font-body-md text-secondary">Loading wisdom spark...</p>
+      </div>
+    );
+  }
 
   return (
     <article className="spark-detail-screen animate-fade-in">
@@ -50,7 +105,7 @@ export const SparkDetail = ({ sparkId, onBack }) => {
         <div className="spark-detail-context-actions">
           <button
             className={`spark-detail-icon-btn ${isSaved ? 'saved' : ''} btn-pressable`}
-            onClick={() => toggleSaveSpark(spark.id)}
+            onClick={() => toggleSaveContent('spark', spark.db_id || spark.id)}
             aria-label={isSaved ? 'Remove from saved' : 'Save spark'}
             title={isSaved ? 'Saved' : 'Save'}
           >
@@ -85,6 +140,12 @@ export const SparkDetail = ({ sparkId, onBack }) => {
         </h1>
 
         <div className="spark-detail-meta-row font-label-sm">
+          {(spark.is_vip || spark.isVip) && (
+            <span className="card-vip-badge" style={{ position: 'static' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>workspace_premium</span>
+              VIP
+            </span>
+          )}
           <span className="spark-detail-category-badge">
             {spark.categoryLabel || spark.category}
           </span>
@@ -110,199 +171,179 @@ export const SparkDetail = ({ sparkId, onBack }) => {
         </p>
       </header>
 
-      {/* 3. Primary Video Player Experience (16:9, Stitch-aligned) */}
+      {/* 3. Primary Video Player Experience */}
       <div className="spark-detail-video-wrap">
         <VideoPlayer
-          src={spark.videoUrl || '/assets/videos/daily-motivation.mp4'}
+          content={spark}
+          src={spark.videoUrl || ''}
           poster={spark.detailImage || spark.image}
           title={spark.title}
           durationLabel={spark.videoDuration || '0:30'}
           variant="hero"
+          onProgressUpdate={({ progress }) => {
+            if (isAuthenticated && user?.id && (spark.db_id || spark.id)) {
+              recordContentActivity({
+                userId: user.id,
+                contentType: 'spark',
+                contentId: spark.db_id || spark.id,
+                progress,
+                completed: progress >= 95
+              });
+            }
+          }}
         />
       </div>
 
-      {/* 4. Compact Polished Audio Player */}
-      <section className="spark-detail-audio-section" aria-label="Audio player">
-        <AudioPlayer spark={spark} variant="reader" />
+      {/* 4. Dedicated Audio Contemplation Player Module */}
+      <section className="spark-detail-audio-section" aria-label="Audio Contemplation">
+        <AudioPlayer
+          spark={spark}
+          title={spark.audioTitle || 'Guided Contemplation'}
+          subtitle={spark.audioSubtitle || '432Hz Calm Resonance'}
+          narrator={spark.narrator || 'Voice of Dr. Cubie'}
+          duration={spark.audioDuration || 255}
+        />
       </section>
 
-      {/* 5. Editorial Body Sections */}
-      <div className="spark-detail-content-flow">
-        {/* Short Introduction / Lead Reflection Paragraph */}
-        <p className="spark-detail-lead font-body-lg">
-          {spark.introParagraph || "True stillness is rarely the absence of noise; rather, it is the deliberate presence of self-governed awareness. When the modern cadence demands perpetual reaction, quiet clarity becomes an architectural act of conscious subtraction."}
+      {/* 5. Serene Reader Essay Body */}
+      <div className="spark-detail-body">
+        {/* Editorial Introduction */}
+        <p className="spark-detail-paragraph font-body-lg intro-lead">
+          {spark.introParagraph || spark.subtitle}
         </p>
 
-        {/* Editorial Reflection Quote Card */}
-        <div className="spark-detail-quote-card">
-          <span className="material-symbols-outlined spark-detail-quote-watermark">
-            format_quote
-          </span>
-          <blockquote className="spark-detail-quote-text font-quote-display">
-            “{spark.quote}”
-          </blockquote>
-          <cite className="spark-detail-quote-cite font-label-sm">
-            {spark.quoteAttribution || '— DR. CUBIE • FIELD NOTES VOL. IV'}
-          </cite>
-        </div>
+        {/* Insight Callout Card */}
+        {spark.insight && (
+          <aside className="spark-detail-insight-card" aria-label="Key Insight">
+            <div className="insight-card-inner">
+              <span className="material-symbols-outlined insight-icon">
+                lightbulb
+              </span>
+              <div className="insight-text-wrap">
+                <span className="insight-eyebrow font-label-sm">CORE INSIGHT</span>
+                <p className="insight-content font-body-md">
+                  {spark.insight}
+                </p>
+              </div>
+            </div>
+          </aside>
+        )}
 
-        {/* Insight & Principle Section */}
-        <section className="spark-detail-section-block">
-          <h2 className="spark-detail-section-title font-title-md">
-            <span className="material-symbols-outlined" style={{ fontSize: '20px', color: 'var(--color-primary)' }}>
-              spa
-            </span>
-            <span>{spark.principleHeading || 'The Principle'}</span>
+        {/* Core Architectural Principle Section */}
+        <section className="spark-detail-principle-section">
+          <h2 className="spark-detail-section-heading font-headline-sm">
+            {spark.principleHeading || 'The Principle'}
           </h2>
-          <p className="spark-detail-section-body font-body-md">
-            {spark.principleText || "Cognitive overload blurs the boundary between urgency and genuine importance, tricking the intellect into exhaustion. High-impact insight only crystallizes when uninterrupted periods of cognitive digestion are granted sovereign space on your calendar."}
+          <p className="spark-detail-paragraph font-body-md">
+            {spark.principleText || spark.reflection}
           </p>
         </section>
 
-        {/* Introspective Prompt Card */}
-        <section className="spark-detail-prompt-card">
-          <div className="spark-detail-prompt-header">
-            <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--color-primary)' }}>
+        {/* Pull Quote Callout Box */}
+        {spark.quote && (
+          <figure className="spark-detail-pullquote-figure">
+            <blockquote className="spark-detail-pullquote font-headline-sm">
+              &ldquo;{spark.quote}&rdquo;
+            </blockquote>
+            <figcaption className="spark-detail-pullquote-cite font-label-md">
+              {spark.quoteAttribution || '— Dr. Cubie'}
+            </figcaption>
+          </figure>
+        )}
+
+        {/* Actionable Micro-Practice Card */}
+        <section className="spark-detail-practice-card" aria-label="Daily Practice">
+          <div className="practice-card-header">
+            <span className="material-symbols-outlined practice-icon">
               psychology
             </span>
-            <span className="spark-detail-prompt-eyebrow font-label-sm">
-              INTROSPECTIVE PROMPT
-            </span>
+            <h3 className="practice-card-heading font-title-md">
+              {spark.practiceHeading || "Today's 1-Minute Practice"}
+            </h3>
           </div>
 
-          <p className="spark-detail-prompt-question font-headline-md">
-            "{spark.introspectivePrompt || 'Where in your routine are you substituting sheer activity for meaningful progress?'}"
+          <p className="practice-main-instruction font-body-md">
+            {spark.practice}
           </p>
 
-          {/* Interactive Journal Reflection Note */}
-          <div className="spark-detail-journal-toggle-wrap">
-            <button
-              className="spark-detail-journal-toggle-btn font-label-sm"
-              onClick={() => setShowNoteForm((prev) => !prev)}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                {showNoteForm ? 'expand_less' : 'edit_note'}
-              </span>
-              <span>{showNoteForm ? 'Hide Private Note' : 'Write Private Reflection Note'}</span>
-            </button>
-          </div>
-
-          {showNoteForm && (
-            <form className="spark-detail-journal-form" onSubmit={handleSaveNote}>
-              <textarea
-                className="spark-detail-journal-textarea font-body-md"
-                placeholder="Write your honest reflection for today..."
-                value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
-                rows={3}
-                aria-label="Personal reflection note"
-              />
-              <button type="submit" className="spark-detail-journal-save-btn btn-pressable font-label-sm">
-                Save Reflection Note
-              </button>
-            </form>
+          {spark.practiceSteps && spark.practiceSteps.length > 0 && (
+            <ol className="practice-steps-list">
+              {spark.practiceSteps.map((step, idx) => (
+                <li key={idx} className="practice-step-item">
+                  <span className="practice-step-number">{idx + 1}</span>
+                  <span className="practice-step-text font-body-md">{step}</span>
+                </li>
+              ))}
+            </ol>
           )}
         </section>
 
-        {/* Today's 1-Minute Practice */}
-        <section className="spark-detail-section-block">
-          <h2 className="spark-detail-section-title font-title-md">
-            <span className="material-symbols-outlined" style={{ fontSize: '20px', color: 'var(--color-primary)' }}>
-              schedule
-            </span>
-            <span>{spark.practiceHeading || "Today's 1-Minute Practice"}</span>
-          </h2>
-
-          <div className="spark-detail-practice-steps">
-            {(spark.practiceSteps || [
-              'Close or tilt away your digital screen completely.',
-              'Write down on physical paper your single essential priority.',
-              'Inhale deeply for four seconds, exhale, and quietly begin.'
-            ]).map((step, idx) => (
-              <div key={idx} className="spark-detail-step-row">
-                <div className="spark-detail-step-number font-label-sm">
-                  {idx + 1}
-                </div>
-                <p className="spark-detail-step-text font-body-md">
-                  {step}
-                </p>
-              </div>
-            ))}
+        {/* Personal Journaling / Reflection Note */}
+        <section className="spark-detail-journal-section" aria-label="Reflection Journal">
+          <div className="journal-section-header">
+            <h3 className="journal-heading font-title-md">
+              Personal Reflection Note
+            </h3>
+            <button
+              className="journal-toggle-btn font-label-sm btn-pressable"
+              onClick={() => setShowNoteForm((prev) => !prev)}
+            >
+              {showNoteForm ? 'Hide Note' : noteText ? 'Edit Note' : 'Write Note'}
+            </button>
           </div>
+
+          {showNoteForm ? (
+            <form onSubmit={handleSaveNote} className="journal-note-form animate-fade-in">
+              <textarea
+                className="journal-textarea font-body-md"
+                placeholder="How does this reflection apply to your immediate decisions today?"
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                rows={4}
+              />
+              <div className="journal-form-actions">
+                <button
+                  type="submit"
+                  className="journal-save-btn font-label-md btn-pressable"
+                >
+                  Save Reflection Note
+                </button>
+              </div>
+            </form>
+          ) : noteText ? (
+            <div className="journal-note-preview font-body-md">
+              <p>{noteText}</p>
+            </div>
+          ) : null}
         </section>
 
-        {/* Resonance Feedback Card */}
-        <div className="spark-detail-resonate-card">
-          <div className="spark-detail-resonate-text">
-            <span className="spark-detail-resonate-title font-label-md">
-              Did this spark resonate?
-            </span>
-            <span className="spark-detail-resonate-sub font-label-sm">
-              94% of thinkers felt centered today
-            </span>
-          </div>
-
-          <div className="spark-detail-resonate-actions">
-            <button
-              className={`spark-detail-resonate-btn ${hasResonated ? 'active' : ''} btn-pressable`}
-              onClick={handleToggleResonate}
-              aria-label="I feel centered"
-              title="Resonated"
-            >
-              <span
-                className="material-symbols-outlined"
-                style={{
-                  fontSize: '18px',
-                  fontVariationSettings: hasResonated ? "'FILL' 1" : "'FILL' 0"
-                }}
-              >
-                favorite
-              </span>
-            </button>
-
-            <button
-              className="spark-detail-resonate-btn btn-pressable"
-              onClick={() => setShowNoteForm(true)}
-              aria-label="Add reflection note"
-              title="Add Note"
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                edit_note
-              </span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* 6. Sticky Bottom Action Bar (Save / Share) */}
-      <footer className="spark-detail-bottom-actions">
-        <button
-          className="spark-detail-save-btn btn-pressable"
-          onClick={() => toggleSaveSpark(spark.id)}
-        >
-          <span
-            className="material-symbols-outlined"
-            style={{
-              fontSize: '20px',
-              fontVariationSettings: isSaved ? "'FILL' 1" : "'FILL' 0"
-            }}
+        {/* Resonance & Engagement Footer */}
+        <footer className="spark-detail-footer">
+          <button
+            className={`spark-resonate-btn font-label-md btn-pressable ${hasResonated ? 'resonated' : ''}`}
+            onClick={handleToggleResonate}
+            aria-pressed={hasResonated}
           >
-            bookmark
-          </span>
-          <span>{isSaved ? 'Saved in Library' : 'Save to Library'}</span>
-        </button>
+            <span
+              className="material-symbols-outlined"
+              style={{ fontVariationSettings: hasResonated ? "'FILL' 1" : "'FILL' 0" }}
+            >
+              favorite
+            </span>
+            <span>{hasResonated ? 'Resonated' : 'Resonate With This'}</span>
+          </button>
 
-        <button
-          className="spark-detail-share-btn btn-pressable"
-          onClick={() => openShare(spark)}
-          aria-label="Share spark"
-        >
-          <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
-            ios_share
-          </span>
-          <span>Share Reflection</span>
-        </button>
-      </footer>
+          <button
+            className="spark-share-footer-btn font-label-md btn-pressable"
+            onClick={() => openShare(spark)}
+          >
+            <span className="material-symbols-outlined">
+              ios_share
+            </span>
+            <span>Share Wisdom</span>
+          </button>
+        </footer>
+      </div>
     </article>
   );
 };

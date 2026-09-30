@@ -169,3 +169,26 @@
   min-width: 44px;
   text-align: right;
 }
+
+@media (max-width: 360px) {
+  .stitch-audio-compact-card {
+    padding: 0.5rem 0.65rem;
+    gap: 0.55rem;
+  }
+  .stitch-audio-play-btn {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+  }
+  .stitch-audio-reader-card {
+    padding: 0.75rem 0.65rem;
+    gap: 0.55rem;
+  }
+  .audio-reader-top-row {
+    gap: 0.5rem;
+  }
+  .audio-reader-time {
+    min-width: 38px;
+    font-size: 11px;
+  }
+}

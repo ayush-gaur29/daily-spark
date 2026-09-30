@@ -1,10 +1,11 @@
-/* Spark Reader / Detail Screen — Stitch Reference */
+/* Spark Reader / Detail Screen — Serene Intellectual Responsive System */
 
 .spark-detail-screen {
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding-bottom: 5.5rem;
+  padding-bottom: 2.5rem;
+  box-sizing: border-box;
 }
 
 /* 1. Context Utility Bar */
@@ -12,6 +13,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.5rem;
   padding: 0.5rem 0 0.75rem 0;
 }
 
@@ -25,12 +27,21 @@
   color: var(--color-on-secondary-container);
   font-weight: 700;
   letter-spacing: 0.05em;
+  font-size: 11px;
+}
+
+@media (max-width: 360px) {
+  .spark-detail-type-pill {
+    padding: 0.2rem 0.55rem;
+    font-size: 10px;
+  }
 }
 
 .spark-detail-context-actions {
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  flex-shrink: 0;
 }
 
 .spark-detail-icon-btn {
@@ -43,6 +54,8 @@
   align-items: center;
   justify-content: center;
   transition: all var(--transition-fast);
+  cursor: pointer;
+  border: none;
 }
 
 .spark-detail-icon-btn:hover {
@@ -57,18 +70,21 @@
 .spark-detail-header {
   display: flex;
   flex-direction: column;
-  padding: 0.5rem 0 0.75rem 0;
+  padding: 0.25rem 0 0.75rem 0;
 }
 
 .spark-detail-title {
   color: var(--color-on-surface);
-  line-height: 1.22;
+  line-height: 1.25;
   letter-spacing: -0.02em;
+  font-size: clamp(24px, 6vw, 36px);
+  margin: 0;
 }
 
 .spark-detail-meta-row {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.4rem;
   margin-top: 0.5rem;
   color: var(--color-secondary);
@@ -90,11 +106,13 @@
 
 .spark-detail-duration-text {
   font-weight: 500;
+  font-size: 11.5px;
 }
 
 .spark-detail-video-text {
   color: var(--color-primary-container);
   font-weight: 600;
+  font-size: 11.5px;
   display: flex;
   align-items: center;
 }
@@ -103,61 +121,153 @@
   color: var(--color-on-surface-variant);
   margin-top: 0.5rem;
   line-height: 1.5;
+  font-size: 15px;
 }
 
 /* 3. Primary Video Player Experience */
 .spark-detail-video-wrap {
   width: 100%;
   margin: 0.5rem 0 1rem 0;
-}
-
-.spark-detail-hero-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.spark-detail-hero-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to top, rgba(0, 40, 142, 0.25) 0%, transparent 70%);
-}
-
-.spark-detail-voice-badge {
-  position: absolute;
-  bottom: 0.75rem;
-  left: 0.75rem;
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.25rem 0.65rem;
-  border-radius: var(--radius-full);
-  background-color: rgba(40, 48, 68, 0.82);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  color: #ffffff;
-  font-weight: 500;
+  box-sizing: border-box;
 }
 
 /* 4. Audio Section */
 .spark-detail-audio-section {
   width: 100%;
   margin-bottom: 1.25rem;
+  box-sizing: border-box;
 }
 
-/* 5. Editorial Body Flow */
+/* 5. Serene Reader Essay Body & Structured Blocks */
+.spark-detail-body,
 .spark-detail-content-flow {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.spark-detail-lead {
+.spark-detail-paragraph {
   color: var(--color-on-surface);
-  line-height: 1.65;
+  line-height: 1.7;
+  font-size: 15px;
+  margin: 0;
 }
 
-/* Quote Card */
+.intro-lead {
+  font-size: 16.5px;
+  color: var(--color-on-surface);
+  line-height: 1.7;
+}
+
+@media (max-width: 360px) {
+  .spark-detail-paragraph {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .intro-lead {
+    font-size: 15px;
+  }
+}
+
+/* Core Insight Callout Card */
+.spark-detail-insight-card {
+  background-color: var(--color-surface-container-low);
+  border: 1px solid var(--color-surface-container);
+  border-left: 3.5px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  padding: 1.15rem 1rem;
+  box-shadow: 0 1px 4px rgba(0, 40, 142, 0.04);
+  box-sizing: border-box;
+}
+
+.insight-card-inner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.insight-icon {
+  color: var(--color-primary);
+  font-size: 22px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.insight-text-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.insight-eyebrow {
+  color: var(--color-primary);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  font-size: 10.5px;
+  text-transform: uppercase;
+}
+
+.insight-content {
+  color: var(--color-on-surface);
+  line-height: 1.55;
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Core Architectural Principle Section */
+.spark-detail-principle-section,
+.spark-detail-section-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.spark-detail-section-heading,
+.spark-detail-section-title {
+  color: var(--color-on-surface);
+  font-family: var(--font-editorial);
+  font-size: 21px;
+  line-height: 28px;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* Pull Quote Callout Box */
+.spark-detail-pullquote-figure {
+  position: relative;
+  margin: 0.25rem 0;
+  padding: 1.25rem 1.25rem 1.25rem 1.35rem;
+  background-color: var(--color-surface-container);
+  border-left: 3.5px solid var(--color-primary-container);
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  box-sizing: border-box;
+}
+
+.spark-detail-pullquote {
+  font-family: var(--font-editorial);
+  font-style: italic;
+  font-size: 18px;
+  line-height: 26px;
+  color: var(--color-on-surface);
+  margin: 0;
+  padding: 0;
+}
+
+.spark-detail-pullquote-cite {
+  color: var(--color-primary-container);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Quote Card (Stitch style fallback) */
 .spark-detail-quote-card {
   position: relative;
   border-radius: var(--radius-xl);
@@ -167,16 +277,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-}
-
-.spark-detail-quote-watermark {
-  position: absolute;
-  top: 0.75rem;
-  right: 1rem;
-  font-size: 56px !important;
-  color: rgba(184, 196, 255, 0.35);
-  pointer-events: none;
-  user-select: none;
+  box-sizing: border-box;
 }
 
 .spark-detail-quote-text {
@@ -196,238 +297,265 @@
   text-transform: uppercase;
 }
 
-/* Section Block (The Principle, Practice) */
-.spark-detail-section-block {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.spark-detail-section-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--color-on-surface);
-}
-
-.spark-detail-section-body {
-  color: var(--color-on-surface);
-  line-height: 1.65;
-}
-
-/* Introspective Prompt Card */
-.spark-detail-prompt-card {
+/* Actionable Micro-Practice Card */
+.spark-detail-practice-card {
+  background-color: var(--color-surface-container-low);
+  border: 1px solid var(--color-border-subtle);
   border-radius: var(--radius-xl);
-  background-color: rgba(183, 196, 253, 0.35);
-  border: 1px solid rgba(183, 196, 253, 0.6);
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  box-shadow: 0 2px 8px rgba(0, 40, 142, 0.04);
+  box-sizing: border-box;
 }
 
-.spark-detail-prompt-header {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.spark-detail-prompt-eyebrow {
-  color: var(--color-primary);
-  font-weight: 700;
-  letter-spacing: 0.08em;
-}
-
-.spark-detail-prompt-question {
-  color: var(--color-on-surface);
-  line-height: 1.45;
-  font-style: italic;
-}
-
-.spark-detail-journal-toggle-wrap {
-  padding-top: 0.25rem;
-}
-
-.spark-detail-journal-toggle-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  color: var(--color-primary);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.spark-detail-journal-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
-}
-
-.spark-detail-journal-textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border-subtle);
-  background-color: var(--color-surface-container-lowest);
-  color: var(--color-on-surface);
-  resize: vertical;
-}
-
-.spark-detail-journal-save-btn {
-  align-self: flex-start;
-  padding: 0.45rem 1rem;
-  border-radius: var(--radius-full);
-  background-color: var(--color-primary-container);
-  color: var(--color-on-primary);
-  font-weight: 600;
-}
-
-/* Practice Steps */
-.spark-detail-practice-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
-  margin-top: 0.25rem;
-}
-
-.spark-detail-step-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.75rem;
-  border-radius: var(--radius-md);
-  background-color: var(--color-surface-container-low);
-  border: 1px solid var(--color-surface-container);
-}
-
-.spark-detail-step-number {
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-full);
-  background-color: var(--color-primary-container);
-  color: var(--color-on-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.spark-detail-step-text {
-  color: var(--color-on-surface);
-  line-height: 1.45;
-}
-
-/* Resonate Card */
-.spark-detail-resonate-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem 1.25rem;
-  border-radius: var(--radius-xl);
-  background-color: var(--color-surface-container);
-}
-
-.spark-detail-resonate-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.spark-detail-resonate-title {
-  color: var(--color-on-surface);
-  font-weight: 600;
-}
-
-.spark-detail-resonate-sub {
-  color: var(--color-on-surface-variant);
-  margin-top: 2px;
-}
-
-.spark-detail-resonate-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.spark-detail-resonate-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--radius-full);
-  background-color: var(--color-surface-container-lowest);
-  color: var(--color-on-surface-variant);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 1px 3px rgba(0, 40, 142, 0.05);
-  transition: all var(--transition-fast);
-}
-
-.spark-detail-resonate-btn.active {
-  color: #e11d48;
-}
-
-/* 6. Sticky Bottom Action Bar */
-.spark-detail-bottom-actions {
-  position: fixed;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 440px;
-  z-index: 45;
-  background-color: rgba(250, 248, 255, 0.94);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid var(--color-border-subtle);
-  padding: 0.75rem var(--margin-screen) calc(env(safe-area-inset-bottom, 0px) + 0.75rem) var(--margin-screen);
-  display: flex;
-  gap: 0.75rem;
-}
-
-@media (max-width: 480px) {
-  .spark-detail-bottom-actions {
-    max-width: 100%;
+@media (max-width: 360px) {
+  .spark-detail-practice-card {
+    padding: 1rem 0.85rem;
   }
 }
 
-.spark-detail-save-btn {
-  flex: 1;
-  height: 3rem;
+.practice-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-primary);
+}
+
+.practice-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.practice-card-heading {
+  color: var(--color-on-surface);
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.practice-main-instruction {
+  color: var(--color-on-surface);
+  line-height: 1.55;
+  margin: 0;
+  font-size: 14px;
+}
+
+.practice-steps-list,
+.spark-detail-practice-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0.25rem 0 0;
+}
+
+.practice-step-item,
+.spark-detail-step-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  background: var(--color-surface-container-lowest);
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
+  box-sizing: border-box;
+}
+
+.practice-step-number,
+.spark-detail-step-number {
+  width: 22px;
+  height: 22px;
   border-radius: var(--radius-full);
   background-color: var(--color-primary-container);
   color: var(--color-on-primary);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.practice-step-text,
+.spark-detail-step-text {
+  color: var(--color-on-surface);
+  line-height: 1.45;
+  font-size: 13.5px;
+}
+
+/* Personal Journaling / Reflection Note */
+.spark-detail-journal-section {
+  background-color: var(--color-surface-container-low);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-sizing: border-box;
+}
+
+@media (max-width: 360px) {
+  .spark-detail-journal-section {
+    padding: 1rem 0.85rem;
+  }
+}
+
+.journal-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.5rem;
-  box-shadow: 0 4px 14px rgba(0, 40, 142, 0.18);
-  transition: all var(--transition-fast);
 }
 
-.spark-detail-save-btn:active {
-  background-color: var(--color-primary-interactive);
-  transform: scale(0.98);
+.journal-heading {
+  color: var(--color-on-surface);
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0;
 }
 
-.spark-detail-share-btn {
-  flex: 1;
-  height: 3rem;
+.journal-toggle-btn {
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
+.journal-note-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.journal-textarea {
+  width: 100%;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-container-lowest);
+  padding: 0.75rem;
+  color: var(--color-on-surface);
+  font-family: inherit;
+  font-size: 13.5px;
+  line-height: 1.5;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.journal-textarea:focus {
+  outline: 2px solid var(--color-primary-container);
+  border-color: var(--color-primary-container);
+}
+
+.journal-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.journal-save-btn {
+  padding: 0.5rem 1rem;
   border-radius: var(--radius-full);
-  background-color: var(--color-secondary-container);
-  color: var(--color-on-secondary-container);
-  font-size: 14px;
+  background: var(--color-primary-container);
+  color: var(--color-on-primary);
+  font-size: 12.5px;
   font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
+  border: none;
+  cursor: pointer;
   transition: all var(--transition-fast);
 }
 
-.spark-detail-share-btn:active {
+.journal-save-btn:hover {
+  background: var(--color-primary-interactive);
+}
+
+.journal-note-preview {
+  background: var(--color-surface-container-lowest);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0.85rem;
+  color: var(--color-on-surface);
+  font-style: italic;
+  line-height: 1.5;
+  font-size: 13.5px;
+}
+
+/* 6. Resonance & Engagement Footer */
+.spark-detail-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-border-subtle);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 360px) {
+  .spark-detail-footer {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+.spark-resonate-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-container);
+  color: var(--color-on-surface);
+  border: 1px solid var(--color-border-subtle);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 12.5px;
+  font-weight: 600;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.spark-resonate-btn:hover {
   background-color: var(--color-surface-container-high);
-  transform: scale(0.98);
+}
+
+.spark-resonate-btn.resonated {
+  background-color: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
+}
+
+.spark-share-footer-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary-container);
+  color: var(--color-on-primary);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  font-size: 12.5px;
+  font-weight: 600;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.spark-share-footer-btn:hover {
+  background-color: var(--color-primary-interactive);
 }

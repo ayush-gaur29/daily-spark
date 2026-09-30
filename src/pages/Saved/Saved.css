@@ -292,6 +292,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   padding-top: 0.25rem;
 }
 
@@ -316,4 +318,28 @@
 
 .saved-vip-note {
   color: var(--color-on-surface-variant);
+  font-size: 11px;
+}
+
+/* Responsive Media Queries */
+@media (max-width: 360px) {
+  .saved-item-row {
+    padding: 0.75rem 0.65rem;
+    gap: 0.5rem;
+  }
+  .saved-item-icon-well {
+    width: 42px;
+    height: 42px;
+  }
+  .saved-item-title {
+    font-size: 14.5px;
+  }
+  .saved-action-circle-btn,
+  .saved-action-icon-btn {
+    width: 34px;
+    height: 34px;
+  }
+  .saved-vip-advantage-card {
+    padding: 1rem 0.85rem;
+  }
 }

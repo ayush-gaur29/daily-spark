@@ -1,8 +1,10 @@
 import React from 'react';
 import { useAudio } from '../../context/AudioContext';
+import { useAccessControl } from '../../context/AccessControlContext';
 import './AudioPlayer.css';
 
 export const AudioPlayer = ({ spark, variant = 'compact' }) => {
+  const { requireAccess } = useAccessControl();
   const {
     currentTrack,
     isPlaying,
@@ -26,11 +28,13 @@ export const AudioPlayer = ({ spark, variant = 'compact' }) => {
 
   const handlePlayToggle = (e) => {
     e.stopPropagation();
-    if (!isThisTrackActive) {
-      playTrack(activeSpark);
-    } else {
-      togglePlay();
-    }
+    requireAccess(activeSpark, () => {
+      if (!isThisTrackActive) {
+        playTrack(activeSpark);
+      } else {
+        togglePlay();
+      }
+    });
   };
 
   const handleScrubClick = (e) => {

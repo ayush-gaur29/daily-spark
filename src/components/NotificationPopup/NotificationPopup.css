@@ -1,0 +1,435 @@
+/* ==============================================================================
+   NotificationPopup.css — Responsive dropdown preview for notifications
+   Dr. Cubie Inspiration Serene Intellectual System
+   ============================================================================== */
+
+/* Base Notification Popup Panel (Mobile-First) */
+.notif-popup-menu {
+  position: fixed;
+  top: calc(3.75rem + env(safe-area-inset-top, 0px) + 8px);
+  right: 12px;
+  left: auto;
+  width: calc(100vw - 24px);
+  max-width: 380px;
+  max-height: calc(100dvh - 3.75rem - env(safe-area-inset-top, 0px) - 24px - env(safe-area-inset-bottom, 0px));
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-lg, 16px);
+  box-shadow: 0 16px 40px -4px rgba(15, 23, 42, 0.18), 0 4px 16px -2px rgba(15, 23, 42, 0.08);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Tablet & Desktop: Popover anchored relative to the bell button */
+@media (min-width: 641px) {
+  .notif-popup-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    left: auto;
+    width: 360px;
+    max-width: 380px;
+    max-height: 520px;
+    box-shadow: 0 12px 32px -4px rgba(15, 23, 42, 0.14), 0 4px 12px -2px rgba(15, 23, 42, 0.08);
+  }
+}
+
+@keyframes popupIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-popup-in {
+  animation: popupIn 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: top right;
+}
+
+/* Header */
+.notif-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  background-color: #ffffff;
+  flex-shrink: 0;
+  gap: 0.5rem;
+}
+
+.notif-popup-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.notif-popup-title {
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.notif-popup-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  background-color: #eff6ff;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.notif-popup-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.notif-popup-mark-btn {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  transition: background-color var(--transition-fast, 150ms);
+  white-space: nowrap;
+}
+
+.notif-popup-mark-btn:hover {
+  background-color: #eff6ff;
+}
+
+.notif-popup-close-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  border: none;
+  background-color: transparent;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: all var(--transition-fast, 150ms);
+}
+
+.notif-popup-close-btn:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Body & Vertical Scrolling */
+.notif-popup-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: min(380px, calc(100dvh - 3.75rem - 130px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.notif-popup-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.notif-popup-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f8fafc;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: background-color var(--transition-fast, 150ms);
+  text-align: left;
+}
+
+.notif-popup-item:last-child {
+  border-bottom: none;
+}
+
+.notif-popup-item:hover,
+.notif-popup-item:focus-visible {
+  background-color: #f8fafc;
+  outline: none;
+}
+
+.notif-popup-item.is-unread {
+  background-color: #f8faff;
+}
+
+.notif-popup-item.is-unread:hover {
+  background-color: #f1f5fd;
+}
+
+/* Icon Box */
+.notif-popup-item-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.notif-popup-item-icon.spark {
+  background-color: #eff6ff;
+  color: #2563eb;
+}
+
+.notif-popup-item-icon.streak {
+  background-color: #fffbeb;
+  color: #d97706;
+}
+
+.notif-popup-item-icon.vip {
+  background-color: #f5f3ff;
+  color: #7c3aed;
+}
+
+.notif-popup-item-icon.video {
+  background-color: #fff1f2;
+  color: #e11d48;
+}
+
+.notif-popup-item-icon.audio {
+  background-color: #ecfdf5;
+  color: #059669;
+}
+
+.notif-popup-item-icon.general,
+.notif-popup-item-icon.system {
+  background-color: #f1f5f9;
+  color: #475569;
+}
+
+/* Item Content */
+.notif-popup-item-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.notif-popup-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.notif-popup-item-title {
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.35;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+}
+
+.notif-popup-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #2563eb;
+  flex-shrink: 0;
+}
+
+.notif-popup-item-message {
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 12.5px;
+  color: #64748b;
+  line-height: 1.4;
+  margin: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.notif-popup-item-time {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+  margin-top: 0.2rem;
+}
+
+/* Empty State */
+.notif-popup-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.25rem 1.25rem;
+  text-align: center;
+}
+
+.notif-empty-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+
+.notif-empty-symbol {
+  font-size: 24px;
+  color: #94a3b8;
+}
+
+.notif-popup-empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+  margin: 0 0 0.25rem 0;
+  word-break: break-word;
+}
+
+.notif-popup-empty-desc {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+  margin: 0;
+  max-width: 260px;
+  word-break: break-word;
+}
+
+/* Skeleton Loading */
+.notif-popup-loading {
+  padding: 0.5rem 1rem;
+}
+
+.notif-popup-skeleton {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0;
+}
+
+.skeleton-icon-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background-color: #f1f5f9;
+  flex-shrink: 0;
+}
+
+.skeleton-text-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.skeleton-line {
+  height: 10px;
+  border-radius: 4px;
+  background-color: #f1f5f9;
+}
+
+.skeleton-line.title {
+  width: 60%;
+}
+
+.skeleton-line.subtitle {
+  width: 85%;
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Footer */
+.notif-popup-footer {
+  border-top: 1px solid #f1f5f9;
+  background-color: #f8fafc;
+  padding: 0.625rem 1rem;
+  flex-shrink: 0;
+}
+
+.notif-popup-viewall-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.75rem;
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background-color: #ffffff;
+  font-family: var(--font-ui, -apple-system, BlinkMacSystemFont, sans-serif);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #2563eb;
+  cursor: pointer;
+  transition: all var(--transition-fast, 150ms);
+}
+
+.notif-popup-viewall-btn:hover {
+  background-color: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+/* Compact Phone Widths (<= 360px) */
+@media (max-width: 360px) {
+  .notif-popup-menu {
+    right: 8px;
+    width: calc(100vw - 16px);
+  }
+
+  .notif-popup-header {
+    padding: 0.65rem 0.75rem;
+  }
+
+  .notif-popup-title {
+    font-size: 14px;
+  }
+
+  .notif-popup-item {
+    padding: 0.65rem 0.75rem;
+    gap: 0.6rem;
+  }
+}

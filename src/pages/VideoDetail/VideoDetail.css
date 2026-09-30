@@ -1,0 +1,378 @@
+/* Video Detail Screen — Clean, Serene Responsive Layout */
+
+.video-detail-screen {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding-bottom: 3rem;
+  box-sizing: border-box;
+}
+
+/* 1. Context Utility Bar */
+.video-detail-context-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0 0.75rem 0;
+}
+
+.video-detail-context-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.video-detail-back-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-container);
+  color: var(--color-on-surface-variant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  border: none;
+}
+
+.video-detail-back-btn:hover {
+  background-color: var(--color-surface-container-high);
+  color: var(--color-on-surface);
+}
+
+.video-detail-type-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-secondary-container);
+  color: var(--color-on-secondary-container);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  font-size: 11px;
+}
+
+.video-detail-context-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.video-detail-icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-container);
+  color: var(--color-on-surface-variant);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  border: none;
+}
+
+.video-detail-icon-btn:hover {
+  background-color: var(--color-surface-container-high);
+}
+
+.video-detail-icon-btn.saved {
+  color: var(--color-primary);
+}
+
+/* 2. Header */
+.video-detail-header {
+  display: flex;
+  flex-direction: column;
+  padding: 0.25rem 0 0.75rem 0;
+}
+
+.video-detail-title {
+  color: var(--color-on-surface);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  font-size: clamp(24px, 6vw, 34px);
+  margin: 0;
+}
+
+.video-detail-meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  color: var(--color-secondary);
+}
+
+.video-detail-category-badge {
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-surface-container);
+  color: var(--color-primary);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+}
+
+.video-detail-meta-dot {
+  color: var(--color-outline-variant);
+  font-size: 12px;
+}
+
+.video-detail-duration-text {
+  font-size: 12px;
+  color: var(--color-secondary);
+}
+
+.video-detail-subtitle {
+  color: var(--color-on-surface-variant);
+  line-height: 1.6;
+  margin-top: 0.75rem;
+  margin-bottom: 0;
+}
+
+/* 3. Player Wrap */
+.video-detail-player-wrap {
+  width: 100%;
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-ambient);
+  margin: 1rem 0 1.5rem 0;
+  background-color: #0f172a;
+}
+
+/* 4. Body Content */
+.video-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.video-detail-overview-card {
+  padding: 1.25rem 1.35rem;
+  background-color: var(--color-surface-container-low);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xl);
+}
+
+.overview-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.overview-icon {
+  color: var(--color-primary);
+  font-size: 20px;
+}
+
+.overview-heading {
+  margin: 0;
+  color: var(--color-on-surface);
+  font-weight: 600;
+}
+
+.video-detail-paragraph {
+  color: var(--color-on-surface-variant);
+  line-height: 1.65;
+  margin: 0;
+}
+
+/* 5. Companion Card */
+.video-detail-companion-card {
+  background: linear-gradient(135deg, rgba(0, 40, 142, 0.04) 0%, rgba(255, 255, 255, 0.9) 100%);
+  border: 1px solid rgba(0, 40, 142, 0.12);
+  border-radius: var(--radius-xl);
+  padding: 1.25rem;
+}
+
+.companion-card-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.companion-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary-container);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.companion-info {
+  flex: 1;
+  min-width: 200px;
+}
+
+.companion-eyebrow {
+  color: var(--color-primary);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  font-size: 10px;
+}
+
+.companion-title {
+  margin: 0.15rem 0 0.25rem 0;
+  color: var(--color-on-surface);
+}
+
+.companion-desc {
+  margin: 0;
+  color: var(--color-on-surface-variant);
+  line-height: 1.5;
+}
+
+.companion-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.companion-nav-btn:hover {
+  opacity: 0.92;
+}
+
+.video-detail-back-home-btn {
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--radius-full);
+  background-color: var(--color-primary);
+  color: #ffffff;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* 6. VIP Media Download Action Bar */
+.video-detail-vip-download-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1.15rem;
+  margin: -0.5rem 0 1.25rem 0;
+  background: linear-gradient(135deg, rgba(217, 119, 6, 0.08) 0%, rgba(254, 243, 199, 0.35) 100%);
+  border: 1px solid rgba(217, 119, 6, 0.28);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 4px 16px rgba(217, 119, 6, 0.06);
+}
+
+.video-detail-vip-download-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.vip-download-sparkle-icon {
+  font-size: 26px;
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+.vip-download-info-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.vip-download-title {
+  color: #78350f;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.vip-download-sub {
+  color: #92400e;
+  font-size: 11px;
+}
+
+.video-detail-vip-download-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.28);
+  transition: all 0.2s ease;
+}
+
+.video-detail-vip-download-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+  transform: translateY(-1px);
+}
+
+.video-detail-vip-download-btn:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.vip-download-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: vipSpinAnim 0.75s linear infinite;
+  display: inline-block;
+}
+
+.vip-download-spinner-sm {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(217, 119, 6, 0.3);
+  border-top-color: #d97706;
+  border-radius: 50%;
+  animation: vipSpinAnim 0.75s linear infinite;
+  display: inline-block;
+}
+
+@keyframes vipSpinAnim {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 520px) {
+  .video-detail-vip-download-bar {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+    gap: 0.75rem;
+  }
+
+  .video-detail-vip-download-btn {
+    width: 100%;
+  }
+}
+

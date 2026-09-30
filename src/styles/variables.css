@@ -81,8 +81,8 @@
   --space-md: 1rem;
   --space-lg: 1.5rem;
   --space-xl: 2.5rem;
-  --margin-screen: 1.25rem;
-  --margin-tablet: 2rem;
+  --margin-screen: clamp(0.875rem, 4vw, 1.25rem);
+  --margin-tablet: clamp(1.5rem, 5vw, 2.5rem);
   --gutter: 1rem;
   
   /* Transitions */
