@@ -12,7 +12,7 @@ export const INITIAL_USER = {
     deliveryTimeLabel: 'Morning quiet window',
     audioSpeed: '1.0x',
     speedLabel: 'Reflective pacing',
-    preferredTopics: 'Leadership, Mindfulness',
+    preferredTopics: '',
     vipStatus: 'Active',
     vipRenewal: 'Renews Dec 18, 2024',
     offlineStorage: '1.2 GB stored offline',

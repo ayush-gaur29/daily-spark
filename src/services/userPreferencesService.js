@@ -5,7 +5,7 @@ export const DEFAULT_USER_PREFERENCES = {
   deliveryTimeLabel: 'Morning quiet window',
   audioSpeed: '1.0x',
   speedLabel: 'Reflective pacing',
-  preferredTopics: ['Leadership', 'Mindfulness']
+  preferredTopics: []
 };
 
 /**
@@ -71,13 +71,13 @@ export const normalizeTopics = (topics) => {
       .map((t) => t.trim())
       .filter(Boolean);
   }
-  return DEFAULT_USER_PREFERENCES.preferredTopics;
+  return [];
 };
 
 /**
- * Retrieve user preferences from local cache and sync with Supabase Auth metadata.
+ * Retrieve user preferences from local cache or Supabase Auth metadata.
  */
-export const getUserPreferences = (userId) => {
+export const getUserPreferences = (userId, userMetadata = null) => {
   const storageKey = userId ? `drcubie_prefs_${userId}` : 'drcubie_prefs_guest';
   try {
     const cached = localStorage.getItem(storageKey);
@@ -92,6 +92,15 @@ export const getUserPreferences = (userId) => {
   } catch (e) {
     console.warn('[UserPreferences] Local storage read error:', e);
   }
+
+  if (userMetadata?.preferences) {
+    return {
+      ...DEFAULT_USER_PREFERENCES,
+      ...userMetadata.preferences,
+      preferredTopics: normalizeTopics(userMetadata.preferences.preferredTopics)
+    };
+  }
+
   return { ...DEFAULT_USER_PREFERENCES };
 };
 
@@ -115,7 +124,7 @@ export const saveUserPreferences = async (userId, partialPrefs) => {
     updated.speedLabel = getSpeedLabel(partialPrefs.audioSpeed);
   }
 
-  if (partialPrefs.preferredTopics) {
+  if (partialPrefs.preferredTopics !== undefined) {
     updated.preferredTopics = normalizeTopics(partialPrefs.preferredTopics);
   }
 
@@ -152,41 +161,44 @@ export const saveUserPreferences = async (userId, partialPrefs) => {
 };
 
 /**
- * Dynamically queries available topic categories from published sparks, audios, and videos in Supabase.
- * Returns unique array of category strings.
+ * Dynamically queries available topic categories exclusively from Supabase tables (sparks, audios, videos, recommendations).
+ * Returns only the dynamic categories that actually exist in the database without any hardcoded, static, or mock data.
  */
 export const fetchAvailableTopics = async () => {
-  const fallbackTopics = ['Leadership', 'Mindfulness', 'Focus', 'Confidence', 'Reflection', 'Resilience', 'Growth'];
-
   if (!supabase) {
-    return fallbackTopics;
+    return [];
   }
 
   try {
-    const [sparksRes, audiosRes, videosRes] = await Promise.all([
-      supabase.from('sparks').select('category').eq('status', 'published'),
-      supabase.from('audios').select('category').eq('status', 'published'),
-      supabase.from('videos').select('category').eq('status', 'published')
+    const [sparksRes, audiosRes, videosRes, recsRes] = await Promise.all([
+      supabase.from('sparks').select('category'),
+      supabase.from('audios').select('category'),
+      supabase.from('videos').select('category'),
+      supabase.from('recommendations').select('category')
     ]);
 
     const topicsSet = new Set();
 
     (sparksRes.data || []).forEach((item) => {
-      if (item.category?.trim()) topicsSet.add(item.category.trim());
+      const cat = item.category?.trim();
+      if (cat) topicsSet.add(cat);
     });
     (audiosRes.data || []).forEach((item) => {
-      if (item.category?.trim()) topicsSet.add(item.category.trim());
+      const cat = item.category?.trim();
+      if (cat) topicsSet.add(cat);
     });
     (videosRes.data || []).forEach((item) => {
-      if (item.category?.trim()) topicsSet.add(item.category.trim());
+      const cat = item.category?.trim();
+      if (cat) topicsSet.add(cat);
+    });
+    (recsRes.data || []).forEach((item) => {
+      const cat = item.category?.trim();
+      if (cat) topicsSet.add(cat);
     });
 
-    if (topicsSet.size > 0) {
-      return Array.from(topicsSet).sort();
-    }
+    return Array.from(topicsSet).sort((a, b) => a.localeCompare(b));
   } catch (err) {
     console.warn('[UserPreferences] fetchAvailableTopics error:', err);
+    return [];
   }
-
-  return fallbackTopics;
 };

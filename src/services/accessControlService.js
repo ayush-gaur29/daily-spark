@@ -1,5 +1,9 @@
 import { supabase } from '../lib/supabase.js';
-import { recordOfflineDownload } from './offlineStorageService.js';
+import {
+  recordOfflineDownload,
+  saveOfflineMediaBlob,
+  formatStorageSize
+} from './offlineStorageService.js';
 
 /**
  * Known fallback VIP IDs for videos and sparks to ensure consistency
@@ -237,38 +241,54 @@ export const downloadVipMediaAsset = async ({
     };
   }
 
-  try {
-    let blob = null;
-    let fileName = '';
-
-    // 1. Direct Supabase Storage download (most secure and fast)
-    const parsed = extractStorageBucketAndPath(targetUrl);
-    if (parsed && supabase) {
-      try {
-        const { data, error } = await supabase.storage
-          .from(parsed.bucket)
-          .download(parsed.path);
-
-        if (!error && data) {
-          blob = data;
-          const origExt = parsed.path.split('.').pop() || (content.contentType === 'video' || content.type === 'video' ? 'mp4' : 'mp3');
-          fileName = `${(content.title || 'vip-media').replace(/[^a-zA-Z0-9_\- ]/g, '').trim().replace(/\s+/g, '_')}.${origExt}`;
-        } else if (error) {
-          console.warn('[AccessControl] Supabase storage download note:', error.message);
+  // 3. Storage Quota Pre-check (prevents partial corrupt downloads)
+  if (typeof navigator !== 'undefined' && navigator.storage?.estimate) {
+    try {
+      const estimate = await navigator.storage.estimate();
+      if (estimate.quota && estimate.usage) {
+        const availableBytes = estimate.quota - estimate.usage;
+        if (availableBytes < 15 * 1024 * 1024) {
+          return {
+            success: false,
+            error: 'Not enough device storage available for this download.'
+          };
         }
-      } catch (storageErr) {
-        console.warn('[AccessControl] Storage download exception:', storageErr);
       }
+    } catch (quotaErr) {
+      console.warn('[AccessControl] Storage estimate check note:', quotaErr);
     }
+  }
 
-    // 2. Fallback: retrieve authorized signed URL and fetch blob
-    if (!blob) {
+  const contentId = String(content.id || content.db_id || content.slug);
+  const isVideo = content.contentType === 'video' || content.type === 'video';
+
+  const reportProgress = (percent, receivedBytes, totalBytes) => {
+    const detail = {
+      contentId,
+      percent,
+      receivedBytes,
+      totalBytes,
+      type: isVideo ? 'video' : 'audio'
+    };
+    if (typeof onProgress === 'function') {
+      onProgress(detail);
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('drcubie_download_progress', { detail }));
+    }
+  };
+
+  try {
+    // 4. Resolve authorized download URL
+    let downloadUrl = targetUrl;
+    if (supabase && !targetUrl.startsWith('/') && !targetUrl.startsWith('data:') && !targetUrl.startsWith('blob:')) {
       const authorizedUrl = await getAuthorizedMediaUrl({
         mediaUrl: targetUrl,
         user,
         profile,
         isVip: true,
-        content
+        content,
+        expiresIn: 3600
       });
 
       if (!authorizedUrl) {
@@ -277,49 +297,90 @@ export const downloadVipMediaAsset = async ({
           error: 'Could not obtain authorized download access.'
         };
       }
-
-      const res = await fetch(authorizedUrl);
-      if (!res.ok) {
-        throw new Error(`Failed to retrieve media file: ${res.status} ${res.statusText}`);
-      }
-
-      blob = await res.blob();
-      const ext = targetUrl.split('?')[0].split('.').pop() || (content.contentType === 'video' || content.type === 'video' ? 'mp4' : 'mp3');
-      fileName = `${(content.title || 'vip-media').replace(/[^a-zA-Z0-9_\- ]/g, '').trim().replace(/\s+/g, '_')}.${ext}`;
+      downloadUrl = authorizedUrl;
     }
 
-    // 3. Trigger browser file download
-    if (typeof window !== 'undefined' && blob) {
-      const blobUrl = URL.createObjectURL(blob);
-      const anchor = document.createElement('a');
-      anchor.href = blobUrl;
-      anchor.download = fileName;
-      anchor.style.display = 'none';
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
+    // 5. Stream media bytes with real-time progress tracking
+    reportProgress(0, 0, 0);
 
-      if (user?.id) {
-        recordOfflineDownload(user.id, content, blob.size, fileName);
-      }
+    const res = await fetch(downloadUrl);
+    if (!res.ok) {
+      throw new Error(`Failed to retrieve media file: ${res.status} ${res.statusText}`);
+    }
 
-      setTimeout(() => {
-        try {
-          URL.revokeObjectURL(blobUrl);
-        } catch {
-          // ignore
+    const contentLengthHeader = res.headers.get('content-length');
+    const totalBytes = contentLengthHeader ? parseInt(contentLengthHeader, 10) : 0;
+
+    // Check quota against actual Content-Length if provided
+    if (totalBytes > 0 && typeof navigator !== 'undefined' && navigator.storage?.estimate) {
+      try {
+        const estimate = await navigator.storage.estimate();
+        if (estimate.quota && estimate.usage) {
+          if (estimate.quota - estimate.usage < totalBytes) {
+            return {
+              success: false,
+              error: 'Not enough device storage available for this download.'
+            };
+          }
         }
-      }, 3000);
-
-      return { success: true, fileName };
+      } catch {
+        // proceed
+      }
     }
+
+    const defaultExt = isVideo ? 'mp4' : 'mp3';
+    const ext = targetUrl.split('?')[0].split('.').pop() || defaultExt;
+    const fileName = `${(content.title || 'vip-media').replace(/[^a-zA-Z0-9_\- ]/g, '').trim().replace(/\s+/g, '_')}.${ext}`;
+    const mimeType = res.headers.get('content-type') || (isVideo ? 'video/mp4' : 'audio/mpeg');
+
+    let blob = null;
+
+    if (res.body && typeof res.body.getReader === 'function') {
+      const reader = res.body.getReader();
+      const chunks = [];
+      let receivedBytes = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+        receivedBytes += value.length;
+
+        const pct = totalBytes > 0 ? Math.min(99, Math.round((receivedBytes / totalBytes) * 100)) : null;
+        reportProgress(pct, receivedBytes, totalBytes);
+      }
+
+      blob = new Blob(chunks, { type: mimeType });
+    } else {
+      // Fallback if ReadableStream is not available
+      blob = await res.blob();
+    }
+
+    if (!blob || blob.size <= 0) {
+      throw new Error('Downloaded media file was empty or corrupted.');
+    }
+
+    // 6. Save actual media Blob into IndexedDB
+    const savedRecord = await saveOfflineMediaBlob({
+      userId: user.id,
+      content,
+      blob,
+      mimeType,
+      fileName
+    });
+
+    reportProgress(100, blob.size, blob.size);
 
     return {
-      success: false,
-      error: 'Browser download could not be initialized.'
+      success: true,
+      fileName,
+      sizeBytes: blob.size,
+      formattedSize: formatStorageSize(blob.size),
+      item: savedRecord
     };
   } catch (err) {
     console.error('[AccessControl] Error executing VIP download:', err);
+    reportProgress(null, 0, 0);
     return {
       success: false,
       error: err.message || 'Download failed due to a network connection error.'

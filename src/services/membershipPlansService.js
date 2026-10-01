@@ -92,7 +92,7 @@ export const fetchActiveMembershipPlans = async () => {
 
   const { data, error } = await supabase
     .from('membership_plans')
-    .select('id, name, plan_type, price, billing_period, description, discount_text, trial_days, features, is_active, display_order, created_at, updated_at')
+    .select('id, name, plan_type, price, billing_period, description, discount_text, features, is_active, display_order, created_at, updated_at')
     .eq('is_active', true)
     .order('display_order', { ascending: true })
     .order('created_at', { ascending: true });

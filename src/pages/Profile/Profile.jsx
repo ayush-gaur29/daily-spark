@@ -16,6 +16,8 @@ import {
 } from '../../services/userPreferencesService';
 import {
   getTotalOfflineStorage,
+  getTotalOfflineStorageAsync,
+  getOfflineMediaBlob,
   removeOfflineDownload,
   clearAllOfflineDownloads
 } from '../../services/offlineStorageService';
@@ -24,6 +26,8 @@ import {
   subscribeToUserMemberships,
   formatMembershipDate
 } from '../../services/membershipsService';
+import { VideoPlayer } from '../../components/VideoPlayer/VideoPlayer';
+import { BrandedLoader } from '../../components/Common/AppLoader';
 import './Profile.css';
 
 export const Profile = () => {
@@ -38,7 +42,7 @@ export const Profile = () => {
     updateProfileName
   } = useAuth();
 
-  const { playbackSpeed, cycleSpeed, changeSpeed } = useAudio();
+  const { playbackSpeed, cycleSpeed, changeSpeed, playTrack } = useAudio();
 
   // Hidden native file input ref
   const fileInputRef = useRef(null);
@@ -104,7 +108,7 @@ export const Profile = () => {
   });
 
   // Dynamic user preferences (Delivery time, topics, etc.)
-  const [userPrefs, setUserPrefs] = useState(() => getUserPreferences(user?.id));
+  const [userPrefs, setUserPrefs] = useState(() => getUserPreferences(user?.id, user?.user_metadata));
 
   // Dynamic available topics from Supabase
   const [availableTopics, setAvailableTopics] = useState([]);
@@ -113,6 +117,8 @@ export const Profile = () => {
 
   // Dynamic offline downloads storage stats
   const [offlineStats, setOfflineStats] = useState(() => getTotalOfflineStorage(user?.id));
+  const [activeOfflineVideo, setActiveOfflineVideo] = useState(null);
+  const [loadingOfflineMediaId, setLoadingOfflineMediaId] = useState(null);
 
   // Active dialog state
   const [activeDialog, setActiveDialog] = useState(null);
@@ -210,9 +216,9 @@ export const Profile = () => {
   // 2. Load and synchronize user preferences
   useEffect(() => {
     if (user?.id) {
-      setUserPrefs(getUserPreferences(user.id));
+      setUserPrefs(getUserPreferences(user.id, user.user_metadata));
     }
-  }, [user?.id]);
+  }, [user?.id, user?.user_metadata]);
 
   useEffect(() => {
     const handlePrefChange = (e) => {
@@ -237,18 +243,47 @@ export const Profile = () => {
     };
   }, []);
 
-  // 4. Track offline downloads for VIP user
+  // 4. Track offline downloads for VIP user (Authoritative from IndexedDB)
   useEffect(() => {
-    setOfflineStats(getTotalOfflineStorage(user?.id));
+    let mounted = true;
+    if (user?.id) {
+      getTotalOfflineStorageAsync(user.id).then((stats) => {
+        if (mounted) setOfflineStats(stats);
+      });
+    } else {
+      setOfflineStats({ items: [], count: 0, playableCount: 0, totalBytes: 0, formattedSize: '0 B' });
+    }
+    return () => {
+      mounted = false;
+    };
   }, [user?.id]);
 
   useEffect(() => {
+    let mounted = true;
     const handleOfflineChange = () => {
-      setOfflineStats(getTotalOfflineStorage(user?.id));
+      if (user?.id) {
+        getTotalOfflineStorageAsync(user.id).then((stats) => {
+          if (mounted) setOfflineStats(stats);
+        });
+      }
     };
     window.addEventListener('drcubie_offline_updated', handleOfflineChange);
-    return () => window.removeEventListener('drcubie_offline_updated', handleOfflineChange);
+    return () => {
+      mounted = false;
+      window.removeEventListener('drcubie_offline_updated', handleOfflineChange);
+    };
   }, [user?.id]);
+
+  // Clean up active offline video Blob URL on player close or unmount
+  useEffect(() => {
+    return () => {
+      if (activeOfflineVideo?.blobUrl) {
+        try {
+          URL.revokeObjectURL(activeOfflineVideo.blobUrl);
+        } catch {}
+      }
+    };
+  }, [activeOfflineVideo]);
 
   const deliveryTime = userPrefs.dailyDeliveryTime || '07:00 AM';
   const deliveryTimeLabel = userPrefs.deliveryTimeLabel || getDeliveryTimeLabel(deliveryTime);
@@ -413,9 +448,15 @@ export const Profile = () => {
   };
 
   /**
-   * Opens topics dialog and initializes selection
+   * Opens topics dialog and dynamically refreshes available topics from Supabase
    */
-  const handleOpenTopicsDialog = () => {
+  const handleOpenTopicsDialog = async () => {
+    try {
+      const dynamicTopics = await fetchAvailableTopics();
+      setAvailableTopics(dynamicTopics);
+    } catch (err) {
+      console.warn('[Profile] Error refreshing dynamic topics:', err);
+    }
     setSelectedTopics([...preferredTopicsList]);
     setActiveDialog('topics');
   };
@@ -447,43 +488,115 @@ export const Profile = () => {
   };
 
   /**
-   * Removes an offline download item
+   * Plays a downloaded offline media item directly from browser IndexedDB
    */
-  const handleRemoveOfflineItem = (id) => {
-    if (user?.id) {
-      removeOfflineDownload(user.id, id);
-      showToast('Downloaded item removed.');
+  const handlePlayOfflineItem = async (item) => {
+    if (!item) return;
+
+    if (item.isPlayableOffline === false) {
+      showToast('This item has incomplete offline data. Please re-download while online.');
+      return;
+    }
+
+    setLoadingOfflineMediaId(item.id);
+
+    try {
+      const blob = await getOfflineMediaBlob(user?.id, item.id);
+      if (!blob) {
+        showToast('Media file not found in local offline storage. Please re-download while online.');
+        return;
+      }
+
+      const blobUrl = URL.createObjectURL(blob);
+
+      if (item.type === 'video') {
+        if (activeOfflineVideo?.blobUrl) {
+          try { URL.revokeObjectURL(activeOfflineVideo.blobUrl); } catch {}
+        }
+        setActiveOfflineVideo({
+          ...item,
+          blobUrl
+        });
+        showToast(`Playing offline video: ${item.title}`);
+      } else {
+        // Audio
+        await playTrack({
+          id: item.id,
+          db_id: item.id,
+          title: item.title,
+          category: item.category || 'Mindfulness',
+          thumbnailUrl: item.thumbnailUrl,
+          audioUrl: blobUrl,
+          isOffline: true
+        });
+        showToast(`Playing offline audio: ${item.title}`);
+      }
+    } catch (err) {
+      console.error('[Profile] Error playing offline media:', err);
+      showToast('Could not play offline media.');
+    } finally {
+      setLoadingOfflineMediaId(null);
     }
   };
 
   /**
-   * Clears all offline downloads
+   * Closes active offline video player and cleans up Object URL
    */
-  const handleClearAllOffline = () => {
-    if (user?.id) {
-      clearAllOfflineDownloads(user.id);
-      showToast('All offline downloads removed.');
+  const handleCloseOfflineVideo = () => {
+    if (activeOfflineVideo?.blobUrl) {
+      try {
+        URL.revokeObjectURL(activeOfflineVideo.blobUrl);
+      } catch (err) {
+        console.warn('[Profile] Error revoking video blob URL:', err);
+      }
+    }
+    setActiveOfflineVideo(null);
+  };
+
+  /**
+   * Removes an offline download item from local storage & IndexedDB
+   */
+  const handleRemoveOfflineItem = async (id) => {
+    if (!user?.id) return;
+    try {
+      if (activeOfflineVideo?.id === id) {
+        handleCloseOfflineVideo();
+      }
+      await removeOfflineDownload(user.id, id);
+      const updated = await getTotalOfflineStorageAsync(user.id);
+      setOfflineStats(updated);
+      showToast('Downloaded item removed from local storage.');
+    } catch (err) {
+      console.warn('[Profile] Error removing offline item:', err);
+      showToast('Failed to remove download.');
     }
   };
 
-  // While checking initial session, display calm loading state
+  /**
+   * Clears all offline downloads for the current user
+   */
+  const handleClearAllOffline = async () => {
+    if (!user?.id) return;
+    try {
+      handleCloseOfflineVideo();
+      await clearAllOfflineDownloads(user.id);
+      const updated = await getTotalOfflineStorageAsync(user.id);
+      setOfflineStats(updated);
+      showToast('All offline downloads removed from this device.');
+    } catch (err) {
+      console.warn('[Profile] Error clearing offline downloads:', err);
+      showToast('Failed to clear downloads.');
+    }
+  };
+
+  // While checking initial session, display calm branded loading state
   if (loading) {
     return (
-      <div className="profile-screen animate-fade-in" style={{ padding: '80px 16px', textAlign: 'center' }}>
-        <div
-          className="auth-spinner"
-          style={{
-            margin: '0 auto 16px',
-            width: '28px',
-            height: '28px',
-            borderWidth: '3px',
-            borderColor: 'rgba(0, 40, 142, 0.15)',
-            borderTopColor: 'var(--color-primary, #00288e)'
-          }}
+      <div className="profile-screen animate-fade-in" style={{ padding: '40px 16px', textAlign: 'center' }}>
+        <BrandedLoader
+          variant="contained"
+          message="Accessing your contemplative sanctuary..."
         />
-        <p className="font-body-md" style={{ color: 'var(--color-on-surface-variant, #444653)' }}>
-          Accessing your contemplative sanctuary...
-        </p>
       </div>
     );
   }
@@ -533,22 +646,6 @@ export const Profile = () => {
               alt={displayName}
               className="profile-avatar-img-lg"
             />
-            <div className="profile-avatar-hover-overlay">
-              <button
-                type="button"
-                className="profile-avatar-action-pill"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveDialog('avatar-view');
-                }}
-                title="View photo"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                  visibility
-                </span>
-                <span>View</span>
-              </button>
-            </div>
           </div>
           <button
             className="profile-camera-btn btn-pressable"
@@ -723,6 +820,20 @@ export const Profile = () => {
             </div>
 
             <div className="profile-row-right">
+              {preferredTopicsList.length > 0 && (
+                <div className="profile-topics-pill-row">
+                  {preferredTopicsList.slice(0, 2).map((t) => (
+                    <span key={t} className="profile-topic-pill-preview">
+                      {t}
+                    </span>
+                  ))}
+                  {preferredTopicsList.length > 2 && (
+                    <span className="profile-topic-pill-preview count">
+                      +{preferredTopicsList.length - 2}
+                    </span>
+                  )}
+                </div>
+              )}
               <span className="material-symbols-outlined profile-row-chevron">chevron_right</span>
             </div>
           </button>
@@ -1112,28 +1223,42 @@ export const Profile = () => {
             {/* Preferred Topics Selection Modal (Dynamic from Supabase) */}
             {activeDialog === 'topics' && (
               <>
-                <h3 className="profile-modal-title font-title-md">Preferred Topics</h3>
-                <p className="profile-modal-desc font-body-md">
-                  Select the contemplative themes that resonate most with your daily practice.
-                </p>
+                <div className="profile-topics-header-wrap">
+                  <div className="profile-topics-header-text">
+                    <h3 className="profile-modal-title font-title-md">Preferred Topics</h3>
+                    <p className="profile-modal-desc font-body-md">
+                      Select the contemplative themes that resonate most with your daily practice.
+                    </p>
+                  </div>
+                  <span className="profile-topics-selected-count font-label-sm">
+                    {selectedTopics.length} selected
+                  </span>
+                </div>
 
                 <div className="profile-topics-grid">
-                  {availableTopics.map((topic) => {
-                    const isSelected = selectedTopics.includes(topic);
-                    return (
-                      <button
-                        key={topic}
-                        type="button"
-                        className={`profile-topic-chip btn-pressable ${isSelected ? 'selected' : ''}`}
-                        onClick={() => handleToggleTopic(topic)}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                          {isSelected ? 'check_circle' : 'add_circle'}
-                        </span>
-                        <span>{topic}</span>
-                      </button>
-                    );
-                  })}
+                  {availableTopics.length === 0 ? (
+                    <p className="profile-modal-desc font-body-sm" style={{ fontStyle: 'italic', margin: '0.75rem 0' }}>
+                      No categories found in the database.
+                    </p>
+                  ) : (
+                    availableTopics.map((topic) => {
+                      const isSelected = selectedTopics.includes(topic);
+                      return (
+                        <button
+                          key={topic}
+                          type="button"
+                          className={`profile-topic-chip btn-pressable ${isSelected ? 'selected' : ''}`}
+                          onClick={() => handleToggleTopic(topic)}
+                          aria-pressed={isSelected}
+                        >
+                          <span className="material-symbols-outlined">
+                            {isSelected ? 'check_circle' : 'add_circle'}
+                          </span>
+                          <span className="profile-topic-chip-label">{topic}</span>
+                        </button>
+                      );
+                    })
+                  )}
                 </div>
 
                 <div className="profile-modal-actions" style={{ marginTop: '1rem' }}>
@@ -1202,24 +1327,129 @@ export const Profile = () => {
                     {offlineStats.items.length > 0 && (
                       <div className="profile-offline-list">
                         {offlineStats.items.map((item) => (
-                          <div key={item.id} className="profile-offline-item">
-                            <div className="profile-offline-item-info">
-                              <span className="profile-offline-item-title">{item.title}</span>
-                              <span className="profile-offline-item-sub">
-                                {item.type?.toUpperCase()} • {item.formattedSize}
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              className="profile-offline-remove-btn"
-                              onClick={() => handleRemoveOfflineItem(item.id)}
-                              title="Delete download"
-                              aria-label={`Remove ${item.title}`}
+                          <div
+                            key={item.id}
+                            className={`profile-offline-item ${item.isPlayableOffline === false ? 'legacy-incomplete' : ''}`}
+                          >
+                            <div
+                              className="profile-offline-item-main btn-pressable"
+                              onClick={() => handlePlayOfflineItem(item)}
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  handlePlayOfflineItem(item);
+                                }
+                              }}
+                              title={item.isPlayableOffline !== false ? `Play ${item.title} offline` : 'Incomplete offline media'}
                             >
-                              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                                delete
-                              </span>
-                            </button>
+                              <div className="profile-offline-thumb">
+                                {item.thumbnailUrl ? (
+                                  <img
+                                    src={item.thumbnailUrl}
+                                    alt={item.title}
+                                    className="profile-offline-thumb-img"
+                                  />
+                                ) : (
+                                  <span className="material-symbols-outlined profile-offline-thumb-icon">
+                                    {item.type === 'video' ? 'movie' : 'headphones'}
+                                  </span>
+                                )}
+                                <span className="profile-offline-type-tag">
+                                  {item.type === 'video' ? 'VID' : 'AUD'}
+                                </span>
+                              </div>
+
+                              <div className="profile-offline-item-info">
+                                <span className="profile-offline-item-title">{item.title}</span>
+                                <div className="profile-offline-meta-row font-label-sm">
+                                  <span className="profile-offline-size">{item.formattedSize}</span>
+                                  {item.downloadedAt && (
+                                    <>
+                                      <span className="profile-offline-dot">•</span>
+                                      <span className="profile-offline-date">
+                                        {new Date(item.downloadedAt).toLocaleDateString(undefined, {
+                                          month: 'short',
+                                          day: 'numeric'
+                                        })}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+
+                                <div className="profile-offline-status-row">
+                                  {item.isPlayableOffline !== false ? (
+                                    <span className="profile-offline-badge ready font-label-sm">
+                                      <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>
+                                        offline_pin
+                                      </span>
+                                      <span>Ready for Offline</span>
+                                    </span>
+                                  ) : (
+                                    <span className="profile-offline-badge warning font-label-sm">
+                                      <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>
+                                        info
+                                      </span>
+                                      <span>Incomplete (Re-download)</span>
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="profile-offline-item-actions">
+                              {item.isPlayableOffline !== false ? (
+                                <button
+                                  type="button"
+                                  className="profile-offline-play-btn btn-pressable"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handlePlayOfflineItem(item);
+                                  }}
+                                  disabled={loadingOfflineMediaId === item.id}
+                                  title={`Play ${item.title} offline`}
+                                  aria-label={`Play ${item.title} offline`}
+                                >
+                                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                                    {loadingOfflineMediaId === item.id ? 'hourglass_top' : 'play_arrow'}
+                                  </span>
+                                  <span className="profile-offline-play-text">Play</span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="profile-offline-redownload-btn btn-pressable"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveDialog(null);
+                                    window.location.hash = item.type === 'video' ? `#/video/${item.id}` : `#/audio/${item.id}`;
+                                  }}
+                                  title="Download again"
+                                  aria-label={`Download ${item.title} again`}
+                                >
+                                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                                    download
+                                  </span>
+                                  <span className="profile-offline-play-text">Re-download</span>
+                                </button>
+                              )}
+
+                              <button
+                                type="button"
+                                className="profile-offline-remove-btn btn-pressable"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemoveOfflineItem(item.id);
+                                }}
+                                title="Delete download"
+                                aria-label={`Remove ${item.title}`}
+                              >
+                                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                                  delete
+                                </span>
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -1442,6 +1672,54 @@ export const Profile = () => {
                 )}
               </>
             )}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Offline Video Player Modal Portaled to document.body */}
+      {activeOfflineVideo && typeof document !== 'undefined' && createPortal(
+        <div
+          className="profile-video-modal-backdrop animate-backdrop"
+          onClick={handleCloseOfflineVideo}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="profile-video-modal-card animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="profile-video-modal-header">
+              <div className="profile-video-modal-title-wrap">
+                <span className="profile-offline-badge ready font-label-sm" style={{ alignSelf: 'flex-start' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>
+                    offline_pin
+                  </span>
+                  <span>Offline Video</span>
+                </span>
+                <h3 className="profile-video-modal-title font-title-md">
+                  {activeOfflineVideo.title}
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="profile-video-modal-close-btn btn-pressable"
+                onClick={handleCloseOfflineVideo}
+                aria-label="Close offline video player"
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="profile-video-modal-player-box">
+              <VideoPlayer
+                src={activeOfflineVideo.blobUrl}
+                poster={activeOfflineVideo.thumbnailUrl || ''}
+                title={activeOfflineVideo.title}
+                autoPlay={true}
+                variant="hero"
+              />
+            </div>
           </div>
         </div>,
         document.body

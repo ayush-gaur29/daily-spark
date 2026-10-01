@@ -155,15 +155,16 @@ export const Saved = ({
       {/* Header Subtitle & Quick Stats */}
       <section className="saved-header-top">
         <div className="saved-title-group">
-          <h1 className="saved-main-title font-headline-md">Saved Archive</h1>
+          <div className="saved-title-row">
+            <h1 className="saved-main-title font-headline-md">Saved Archive</h1>
+            <div className="saved-curated-badge">
+              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                auto_awesome
+              </span>
+              <span className="font-label-sm">{savedItems.length} Curated</span>
+            </div>
+          </div>
           <p className="saved-subtitle font-body-md">Personal reflections and saved practices</p>
-        </div>
-
-        <div className="saved-curated-badge">
-          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-            auto_awesome
-          </span>
-          <span className="font-label-sm">{savedItems.length} Curated</span>
         </div>
       </section>
 

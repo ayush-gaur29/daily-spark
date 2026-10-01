@@ -1,15 +1,18 @@
+import { supabase } from '../lib/supabase';
+
 /**
- * Payment Service Abstraction for Dr. Cubie Inspiration.
+ * Payment Service for Dr. Cubie Inspiration.
  *
  * ARCHITECTURAL DESIGN:
- * This service acts as an abstraction boundary for payment flows.
- * Currently runs in simulated DEMO / SANDBOX mode without touching real payment gateways.
- * Structured so that real providers (Stripe, Razorpay, etc.) can be plugged in later
- * without rewriting the checkout UI components.
+ * This service communicates with the server-side Supabase Edge Function 'stripe-payment'
+ * to initialize Stripe TEST MODE payment sessions and handles payment confirmation
+ * via Stripe.js and Stripe Payment Element.
  *
  * SECURITY:
- * Never stores or persists sensitive payment credentials (card numbers, CVVs, passwords).
- * All payment processing in this mode is completely local/in-memory demo simulation.
+ * - NEVER contains or handles the Stripe SECRET key.
+ * - Sensitive card credentials are handled solely by Stripe Payment Element.
+ * - Authoritative pricing is verified server-side by the Supabase Edge Function.
+ * - No sensitive payment credentials are stored in localStorage or database tables.
  */
 
 export const PAYMENT_METHODS = {
@@ -17,185 +20,225 @@ export const PAYMENT_METHODS = {
 };
 
 /**
- * Format a raw string into a standard 16-digit card number with 4-digit spacing.
- * E.g. "4242424242424242" -> "4242 4242 4242 4242"
+ * Maps raw Stripe error codes to clear, friendly user-facing messages.
  */
-export const formatCardNumber = (value = '') => {
-  const digitsOnly = String(value).replace(/\D/g, '').slice(0, 16);
-  const parts = [];
-  for (let i = 0; i < digitsOnly.length; i += 4) {
-    parts.push(digitsOnly.slice(i, i + 4));
+export const formatStripeError = (error) => {
+  if (!error) return 'An unexpected error occurred during payment. Please try again.';
+
+  if (typeof error === 'string') return error;
+
+  switch (error.code) {
+    case 'card_declined':
+      return 'Your card was declined by the issuing bank. Please try another card or check with your bank.';
+    case 'expired_card':
+      return 'The card expiration date is invalid or the card has expired.';
+    case 'incorrect_cvc':
+    case 'invalid_cvc':
+      return 'The security code (CVC/CVV) is incorrect. Please check and try again.';
+    case 'incorrect_number':
+    case 'invalid_number':
+      return 'The card number is invalid. Please verify the digits entered.';
+    case 'processing_error':
+      return 'A processing error occurred with the card gateway. Please try again.';
+    case 'payment_intent_authentication_failure':
+      return 'Card authentication failed. Please complete the verification step or try another card.';
+    case 'insufficient_funds':
+      return 'The transaction failed due to insufficient funds on the card.';
+    default:
+      return error.message || 'Payment could not be completed. Please check your details and try again.';
   }
-  return parts.join(' ');
 };
 
 /**
- * Format raw input into MM/YY expiry format.
- * E.g. "1228" -> "12/28"
+ * Initiates an authoritative Stripe payment session by calling the Supabase Edge Function.
+ * The Edge Function validates the plan ID, calculates the price server-side,
+ * and creates a Stripe PaymentIntent (or SetupIntent).
+ *
+ * @param {Object} params
+ * @param {Object} params.plan - The selected membership plan from Supabase
+ * @param {Object} [params.user] - Authenticated user object
+ * @returns {Promise<Object>} Session object containing clientSecret and metadata
  */
-export const formatExpiryDate = (value = '') => {
-  const digitsOnly = String(value).replace(/\D/g, '').slice(0, 4);
-  if (digitsOnly.length > 2) {
-    return `${digitsOnly.slice(0, 2)}/${digitsOnly.slice(2)}`;
-  }
-  return digitsOnly;
-};
-
-/**
- * Format CVV input (digits only, max 4 chars).
- */
-export const formatCvv = (value = '') => {
-  return String(value).replace(/\D/g, '').slice(0, 4);
-};
-
-/**
- * Validate payment form fields based on the selected payment method.
- * Returns { isValid: boolean, errors: Record<string, string> }
- */
-export const validatePaymentForm = (method, formData) => {
-  const errors = {};
-
-  if (method === PAYMENT_METHODS.CARD) {
-    // 1. Cardholder Name
-    const name = (formData.cardholderName || '').trim();
-    if (!name) {
-      errors.cardholderName = 'Cardholder name is required.';
-    } else if (name.length < 2) {
-      errors.cardholderName = 'Please enter a valid full name.';
-    }
-
-    // 2. Card Number
-    const rawCard = (formData.cardNumber || '').replace(/\s+/g, '');
-    if (!rawCard) {
-      errors.cardNumber = 'Card number is required.';
-    } else if (rawCard.length < 15 || rawCard.length > 16 || !/^\d+$/.test(rawCard)) {
-      errors.cardNumber = 'Please enter a valid 15-16 digit card number.';
-    }
-
-    // 3. Expiry Date
-    const expiry = (formData.expiryDate || '').trim();
-    if (!expiry) {
-      errors.expiryDate = 'Expiry date is required.';
-    } else if (!/^\d{2}\/\d{2}$/.test(expiry)) {
-      errors.expiryDate = 'Use MM/YY format.';
-    } else {
-      const [mmStr, yyStr] = expiry.split('/');
-      const month = parseInt(mmStr, 10);
-      const year = 2000 + parseInt(yyStr, 10);
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth() + 1;
-
-      if (month < 1 || month > 12) {
-        errors.expiryDate = 'Invalid month (01-12).';
-      } else if (year < currentYear || (year === currentYear && month < currentMonth)) {
-        errors.expiryDate = 'Card has expired.';
-      } else if (year > currentYear + 20) {
-        errors.expiryDate = 'Invalid year.';
-      }
-    }
-
-    // 4. CVV
-    const cvv = (formData.cvv || '').trim();
-    if (!cvv) {
-      errors.cvv = 'CVV required.';
-    } else if (!/^\d{3,4}$/.test(cvv)) {
-      errors.cvv = '3 or 4 digits.';
-    }
-  }
-
-  return {
-    isValid: Object.keys(errors).length === 0,
-    errors
-  };
-};
-
-/**
- * Initializes a client-side checkout session for the chosen plan.
- * In a production architecture with Stripe/Razorpay, this would request an order/session token from the backend.
- */
-export const createPaymentSession = async ({ plan, paymentMethod, user = null }) => {
-  if (!plan) {
+export const createPaymentSession = async ({ plan, user = null }) => {
+  if (!plan?.id) {
     throw new Error('A membership plan must be selected to initiate payment.');
   }
 
-  const sessionId = `demo_sess_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+  if (!supabase) {
+    throw new Error('Supabase client is not available. Please check your network connection.');
+  }
+
+  let data = null;
+  let invokeError = null;
+
+  try {
+    const res = await supabase.functions.invoke('stripe-payment', {
+      body: {
+        planId: plan.id
+      }
+    });
+    data = res.data;
+    invokeError = res.error;
+  } catch (netErr) {
+    throw new Error(
+      netErr?.message || 'Network error connecting to payment service. Please try again.'
+    );
+  }
+
+  if (invokeError) {
+    let friendlyMessage = invokeError.message;
+
+    // Check if error response contains a specific JSON error message
+    if (invokeError.context) {
+      const status = invokeError.context.status;
+      if (status === 404) {
+        friendlyMessage =
+          "Supabase Edge Function 'stripe-payment' is not yet deployed. Please deploy it to your Supabase project (supabase functions deploy stripe-payment) and set the STRIPE_SECRET_KEY secret.";
+      } else {
+        try {
+          const raw = await invokeError.context.json();
+          if (raw?.error) {
+            friendlyMessage = raw.error;
+          }
+        } catch {
+          // ignore parsing error
+        }
+      }
+    }
+
+    throw new Error(friendlyMessage || 'Unable to initialize Stripe payment session.');
+  }
+
+  if (!data || !data.clientSecret) {
+    throw new Error('Payment gateway did not return a valid client secret.');
+  }
 
   return {
-    sessionId,
-    planId: plan.id,
-    planName: plan.name,
-    amount: Number(plan.price) || 0,
-    currency: 'USD',
-    billingPeriod: plan.billing_period,
-    trialDays: Number(plan.trial_days) || 0,
-    paymentMethod,
+    clientSecret: data.clientSecret,
+    paymentIntentId: data.paymentIntentId || data.setupIntentId,
+    mode: data.mode || (data.amount === 0 ? 'setup' : 'payment'),
+    planId: data.planId || plan.id,
+    planName: data.planName || plan.name,
+    amount: data.amount !== undefined ? data.amount : Number(plan.price) || 0,
+    currency: data.currency || 'USD',
+    billingPeriod: data.billingPeriod || plan.billing_period,
+    trialDays: data.trialDays !== undefined ? data.trialDays : Number(plan.trial_days) || 0,
     userEmail: user?.email || null,
     createdAt: new Date().toISOString()
   };
 };
 
 /**
- * Processes payment for the checkout session.
- * Currently simulates the payment gateway handshake with a short realistic delay.
- * Includes a deliberate simulation test trigger for failure testing (CVV = '000' or card ending in '0000').
+ * Confirms payment through Stripe.js using Stripe Payment Element.
+ * Supports both PaymentIntent (paid memberships) and SetupIntent ($0 trials).
+ *
+ * @param {Object} params
+ * @param {Object} params.stripe - Stripe.js instance
+ * @param {Object} params.elements - Stripe Elements instance
+ * @param {Object} params.session - Payment session created from Edge Function
+ * @param {Object} params.plan - Selected membership plan
+ * @returns {Promise<Object>} Verified transaction receipt
  */
-export const processPayment = async ({
+export const confirmStripePayment = async ({
+  stripe,
+  elements,
   session,
-  paymentMethod,
-  paymentDetails
+  plan
 }) => {
-  // 1. Validate parameters
-  if (!session) {
-    throw new Error('Payment session is expired or invalid.');
+  if (!stripe || !elements) {
+    throw new Error('Stripe payment elements are not ready. Please try again.');
   }
 
-  const validation = validatePaymentForm(paymentMethod, paymentDetails);
-  if (!validation.isValid) {
-    const firstError = Object.values(validation.errors)[0];
-    const err = new Error(firstError || 'Please check your payment information.');
-    err.validationErrors = validation.errors;
+  if (!session?.clientSecret) {
+    throw new Error('Invalid payment session. Please restart checkout.');
+  }
+
+  const isSetupMode = session.mode === 'setup';
+  const returnUrl = new URL('#/vip-pass', window.location.href).href;
+
+  if (isSetupMode) {
+    // Zero-dollar trial flow: Confirm card setup without charging
+    const { error: setupError, setupIntent } = await stripe.confirmSetup({
+      elements,
+      clientSecret: session.clientSecret,
+      confirmParams: {
+        return_url: returnUrl
+      },
+      redirect: 'if_required'
+    });
+
+    if (setupError) {
+      const err = new Error(formatStripeError(setupError));
+      err.code = setupError.code;
+      err.raw = setupError;
+      throw err;
+    }
+
+    if (!setupIntent || (setupIntent.status !== 'succeeded' && setupIntent.status !== 'processing')) {
+      throw new Error(`Card validation status: ${setupIntent?.status || 'incomplete'}. Please try again.`);
+    }
+
+    return {
+      success: true,
+      isTestMode: true,
+      transactionId: setupIntent.id,
+      referenceNumber: `STRIPE-${setupIntent.id.replace('seti_', '').slice(0, 10).toUpperCase()}`,
+      status: setupIntent.status,
+      paidAt: new Date().toISOString(),
+      planId: session.planId || plan.id,
+      planName: session.planName || plan.name,
+      amount: 0,
+      currency: 'USD',
+      billingPeriod: session.billingPeriod || plan.billing_period,
+      trialDays: session.trialDays || plan.trial_days || 0,
+      paymentMethod: 'card',
+      paymentSummary: 'Card verification'
+    };
+  }
+
+  // Standard PaymentIntent flow: Confirm payment
+  const { error: paymentError, paymentIntent } = await stripe.confirmPayment({
+    elements,
+    clientSecret: session.clientSecret,
+    confirmParams: {
+      return_url: returnUrl
+    },
+    redirect: 'if_required'
+  });
+
+  if (paymentError) {
+    const err = new Error(formatStripeError(paymentError));
+    err.code = paymentError.code;
+    err.raw = paymentError;
     throw err;
   }
 
-  // 2. Simulate realistic gateway communication delay (1.5 seconds)
-  await new Promise((resolve) => setTimeout(resolve, 1500));
-
-  // 3. Test failure simulation condition:
-  // If user inputs CVV "000" or card ending in "0000", simulate gateway decline
-  const rawCard = (paymentDetails.cardNumber || '').replace(/\s+/g, '');
-  if (paymentDetails.cvv === '000' || rawCard.endsWith('0000')) {
-    const declineErr = new Error('Demo Payment Declined: Transaction declined by issuing bank (Test Simulation).');
-    declineErr.code = 'CARD_DECLINED';
-    throw declineErr;
+  if (!paymentIntent || (paymentIntent.status !== 'succeeded' && paymentIntent.status !== 'processing')) {
+    throw new Error(`Payment status: ${paymentIntent?.status || 'incomplete'}. Please try again.`);
   }
-
-  // 4. Construct safe, non-sensitive demo transaction receipt
-  const lastFour = rawCard.slice(-4) || '4242';
-  const paymentSummary = `Card ending in •••• ${lastFour}`;
 
   const receipt = {
     success: true,
-    isDemo: true,
-    transactionId: `DEMO-TXN-${Date.now().toString(36).toUpperCase()}`,
-    referenceNumber: `DEMO-REF-${Math.floor(100000 + Math.random() * 900000)}`,
-    status: 'completed',
+    isTestMode: true,
+    transactionId: paymentIntent.id,
+    referenceNumber: `STRIPE-${paymentIntent.id.replace('pi_', '').slice(0, 10).toUpperCase()}`,
+    status: paymentIntent.status,
     paidAt: new Date().toISOString(),
-    planId: session.planId,
-    planName: session.planName,
-    amount: session.amount,
-    currency: session.currency || 'USD',
-    billingPeriod: session.billingPeriod,
-    trialDays: session.trialDays,
-    paymentMethod,
-    paymentSummary
+    planId: session.planId || plan.id,
+    planName: session.planName || plan.name,
+    amount: paymentIntent.amount ? paymentIntent.amount / 100 : session.amount,
+    currency: (paymentIntent.currency || session.currency || 'USD').toUpperCase(),
+    billingPeriod: session.billingPeriod || plan.billing_period,
+    trialDays: session.trialDays || plan.trial_days || 0,
+    paymentMethod: 'card',
+    paymentSummary: 'Card'
   };
 
   return receipt;
 };
 
 /**
- * Placeholder verification hook for future asynchronous payment status webhooks/polls.
+ * Verifies a transaction status asynchronously if needed.
  */
 export const verifyPayment = async (transactionId) => {
   if (!transactionId) return { verified: false };
@@ -207,17 +250,16 @@ export const verifyPayment = async (transactionId) => {
 };
 
 /**
- * Post-payment success handler hook point.
+ * Post-payment success handler.
  */
 export const handlePaymentSuccess = async (receipt) => {
-  // In future production: dispatch to backend telemetry or refresh profile entitlements
   return receipt;
 };
 
 /**
- * Post-payment failure handler hook point.
+ * Post-payment failure handler.
  */
 export const handlePaymentFailure = async (error) => {
-  console.warn('[PaymentService] Payment failure recorded (Demo Mode):', error.message);
+  console.warn('[PaymentService] Stripe test payment failure recorded:', error.message);
   return { handled: true };
 };

@@ -186,7 +186,6 @@ export const fetchActiveUserMembership = async (userId) => {
           billing_period,
           description,
           discount_text,
-          trial_days,
           features,
           is_active
         )
@@ -396,7 +395,7 @@ export const activateMembershipPurchase = async ({
   // 1. Verify that the selected plan still exists and is active in Supabase
   const { data: dbPlan, error: planError } = await supabase
     .from('membership_plans')
-    .select('id, name, plan_type, price, billing_period, description, discount_text, trial_days, features, is_active')
+    .select('id, name, plan_type, price, billing_period, description, discount_text, features, is_active')
     .eq('id', planId)
     .maybeSingle();
 

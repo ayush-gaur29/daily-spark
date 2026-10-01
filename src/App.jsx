@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { SparksProvider } from './context/SparksContext';
+import { SparksProvider, useSparks } from './context/SparksContext';
 import { AudioProvider } from './context/AudioContext';
 import { AccessControlProvider } from './context/AccessControlContext';
 import { Header } from './components/Header/Header';
@@ -8,6 +8,7 @@ import { BottomNav } from './components/BottomNav/BottomNav';
 import { ShareSheet } from './components/ShareSheet/ShareSheet';
 import { Toast } from './components/Toast/Toast';
 import { AuthModal } from './components/Auth/AuthModal';
+import { AppLoader } from './components/Common/AppLoader';
 
 import { Today } from './pages/Today/Today';
 import { Saved } from './pages/Saved/Saved';
@@ -35,7 +36,14 @@ import { getUserPreferences, isSparkDeliveredForUser } from './services/userPref
  * dynamic notifications, and global layout rendering.
  */
 const AppShell = () => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { sparks, loading: sparksLoading } = useSparks();
+
+  // Track initial startup lifecycle: loader remains until real init is complete, then cleanly unmounts
+  const [hasInitialBootCompleted, setHasInitialBootCompleted] = useState(false);
+
+  // Authoritative app readiness: auth session verification + initial content readiness
+  const isAppReady = !authLoading && (!sparksLoading || (Array.isArray(sparks) && sparks.length > 0));
 
   // Routes: 'today' | 'saved' | 'vip-pass' | 'profile' | 'notifications' | 'spark/:id'
   const [route, setRoute] = useState(() => {
@@ -242,6 +250,15 @@ const AppShell = () => {
 
   return (
     <div className="app-wrapper">
+      {/* Dr. Cubie Modern Branded Startup Loader */}
+      {!hasInitialBootCompleted && (
+        <AppLoader
+          isReady={isAppReady}
+          message="Preparing your inspiration..."
+          onExited={() => setHasInitialBootCompleted(true)}
+        />
+      )}
+
       <div className="app-shell">
         {/* Top Fixed App Header with Bell and Dropdown Popup */}
         <Header

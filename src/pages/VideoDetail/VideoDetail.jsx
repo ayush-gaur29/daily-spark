@@ -5,6 +5,7 @@ import { useAccessControl } from '../../context/AccessControlContext';
 import { VideoPlayer } from '../../components/VideoPlayer/VideoPlayer';
 import { fetchVideoById } from '../../services/videosService';
 import { recordContentActivity } from '../../services/activityService';
+import { getOfflineMediaRecord } from '../../services/offlineStorageService';
 import './VideoDetail.css';
 
 export const VideoDetail = ({ videoId, onBack, onNavigateToSpark }) => {
@@ -15,6 +16,9 @@ export const VideoDetail = ({ videoId, onBack, onNavigateToSpark }) => {
   const [video, setVideo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(null);
+  const [isOfflineDownloaded, setIsOfflineDownloaded] = useState(false);
+  const [offlineBlobUrl, setOfflineBlobUrl] = useState(null);
   const isDownloadingRef = useRef(false);
 
   useEffect(() => {
@@ -40,6 +44,58 @@ export const VideoDetail = ({ videoId, onBack, onNavigateToSpark }) => {
     return () => {
       mounted = false;
     };
+  }, [videoId]);
+
+  // Check offline media storage in IndexedDB
+  useEffect(() => {
+    let mounted = true;
+    const checkOffline = async () => {
+      if (user?.id && videoId) {
+        try {
+          const record = await getOfflineMediaRecord(user.id, videoId);
+          if (mounted && record?.blob) {
+            setIsOfflineDownloaded(true);
+            const blobUrl = URL.createObjectURL(record.blob);
+            setOfflineBlobUrl(blobUrl);
+          } else if (mounted) {
+            setIsOfflineDownloaded(false);
+          }
+        } catch {
+          // ignore
+        }
+      }
+    };
+    checkOffline();
+
+    const handleOfflineUpdated = () => checkOffline();
+    window.addEventListener('drcubie_offline_updated', handleOfflineUpdated);
+
+    return () => {
+      mounted = false;
+      window.removeEventListener('drcubie_offline_updated', handleOfflineUpdated);
+      if (offlineBlobUrl) {
+        try { URL.revokeObjectURL(offlineBlobUrl); } catch {}
+      }
+    };
+  }, [user?.id, videoId]);
+
+  // Real-time download progress tracking
+  useEffect(() => {
+    const handleProgress = (e) => {
+      const detail = e.detail;
+      if (detail && String(detail.contentId) === String(videoId)) {
+        if (detail.percent === 100) {
+          setIsDownloading(false);
+          isDownloadingRef.current = false;
+          setIsOfflineDownloaded(true);
+          setDownloadProgress(null);
+        } else if (detail.percent !== null) {
+          setDownloadProgress(detail.percent);
+        }
+      }
+    };
+    window.addEventListener('drcubie_download_progress', handleProgress);
+    return () => window.removeEventListener('drcubie_download_progress', handleProgress);
   }, [videoId]);
 
   // Record initial activity in public.content_activity
@@ -173,20 +229,37 @@ export const VideoDetail = ({ videoId, onBack, onNavigateToSpark }) => {
           {/* Download Quick Action (visible for VIP users or logged-out cue; hidden for normal users) */}
           {(isUserVip || !isAuthenticated) && (
             <button
-              className={`video-detail-icon-btn ${isDownloading ? 'downloading' : ''} btn-pressable`}
+              className={`video-detail-icon-btn ${isOfflineDownloaded ? 'saved' : ''} ${isDownloading ? 'downloading' : ''} btn-pressable`}
               onClick={handleDownload}
               disabled={isDownloading}
-              aria-label={!isAuthenticated ? 'Sign in to download video' : 'Download video'}
+              aria-label={
+                !isAuthenticated
+                  ? 'Sign in to download video'
+                  : isDownloading
+                  ? `Downloading video${downloadProgress !== null ? ` ${downloadProgress}%` : ''}...`
+                  : isOfflineDownloaded
+                  ? 'Downloaded for Offline viewing'
+                  : 'Download Video (.mp4)'
+              }
               title={
                 !isAuthenticated
                   ? 'Sign in to download video'
                   : isDownloading
-                  ? 'Downloading video...'
+                  ? `Downloading${downloadProgress !== null ? ` ${downloadProgress}%` : '...'}`
+                  : isOfflineDownloaded
+                  ? 'Downloaded for Offline'
                   : 'Download Video (.mp4)'
               }
             >
               {isDownloading ? (
-                <span className="vip-download-spinner-sm" />
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '10px', fontWeight: 700 }}>
+                  <span className="vip-download-spinner-sm" />
+                  {downloadProgress !== null ? `${downloadProgress}%` : ''}
+                </span>
+              ) : isOfflineDownloaded ? (
+                <span className="material-symbols-outlined" style={{ fontSize: '20px', color: '#16a34a', fontVariationSettings: "'FILL' 1" }}>
+                  offline_pin
+                </span>
               ) : (
                 <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
                   {!isAuthenticated ? 'lock' : 'download'}
@@ -258,7 +331,7 @@ export const VideoDetail = ({ videoId, onBack, onNavigateToSpark }) => {
       <div className="video-detail-player-wrap">
         <VideoPlayer
           content={video}
-          src={video.videoUrl || ''}
+          src={offlineBlobUrl || video.videoUrl || ''}
           poster={video.posterUrl || ''}
           title={video.title}
           durationLabel={video.duration || '0:30'}

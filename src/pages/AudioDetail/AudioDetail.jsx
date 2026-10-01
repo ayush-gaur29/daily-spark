@@ -6,6 +6,7 @@ import { useAccessControl } from '../../context/AccessControlContext';
 import { ImageWithFallback } from '../../components/Common/ImageWithFallback';
 import { fetchAudioById } from '../../services/audiosService';
 import { recordContentActivity } from '../../services/activityService';
+import { getOfflineMediaRecord } from '../../services/offlineStorageService';
 import './AudioDetail.css';
 
 export const AudioDetail = ({ audioId, onBack, onNavigateToSpark }) => {
@@ -29,6 +30,8 @@ export const AudioDetail = ({ audioId, onBack, onNavigateToSpark }) => {
   const [audio, setAudio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(null);
+  const [isOfflineDownloaded, setIsOfflineDownloaded] = useState(false);
   const isDownloadingRef = useRef(false);
 
   useEffect(() => {
@@ -54,6 +57,51 @@ export const AudioDetail = ({ audioId, onBack, onNavigateToSpark }) => {
     return () => {
       mounted = false;
     };
+  }, [audioId]);
+
+  // Check offline media storage in IndexedDB
+  useEffect(() => {
+    let mounted = true;
+    const checkOffline = async () => {
+      if (user?.id && audioId) {
+        try {
+          const record = await getOfflineMediaRecord(user.id, audioId);
+          if (mounted) {
+            setIsOfflineDownloaded(Boolean(record?.blob));
+          }
+        } catch {
+          // ignore
+        }
+      }
+    };
+    checkOffline();
+
+    const handleOfflineUpdated = () => checkOffline();
+    window.addEventListener('drcubie_offline_updated', handleOfflineUpdated);
+
+    return () => {
+      mounted = false;
+      window.removeEventListener('drcubie_offline_updated', handleOfflineUpdated);
+    };
+  }, [user?.id, audioId]);
+
+  // Real-time download progress tracking
+  useEffect(() => {
+    const handleProgress = (e) => {
+      const detail = e.detail;
+      if (detail && String(detail.contentId) === String(audioId)) {
+        if (detail.percent === 100) {
+          setIsDownloading(false);
+          isDownloadingRef.current = false;
+          setIsOfflineDownloaded(true);
+          setDownloadProgress(null);
+        } else if (detail.percent !== null) {
+          setDownloadProgress(detail.percent);
+        }
+      }
+    };
+    window.addEventListener('drcubie_download_progress', handleProgress);
+    return () => window.removeEventListener('drcubie_download_progress', handleProgress);
   }, [audioId]);
 
   // Record initial activity in public.content_activity
@@ -228,20 +276,37 @@ export const AudioDetail = ({ audioId, onBack, onNavigateToSpark }) => {
           {/* Download Quick Action (visible for VIP users or logged-out cue; hidden for normal users) */}
           {(isUserVip || !isAuthenticated) && (
             <button
-              className={`audio-detail-icon-btn ${isDownloading ? 'downloading' : ''} btn-pressable`}
+              className={`audio-detail-icon-btn ${isOfflineDownloaded ? 'saved' : ''} ${isDownloading ? 'downloading' : ''} btn-pressable`}
               onClick={handleDownload}
               disabled={isDownloading}
-              aria-label={!isAuthenticated ? 'Sign in to download audio' : 'Download audio'}
+              aria-label={
+                !isAuthenticated
+                  ? 'Sign in to download audio'
+                  : isDownloading
+                  ? `Downloading audio${downloadProgress !== null ? ` ${downloadProgress}%` : ''}...`
+                  : isOfflineDownloaded
+                  ? 'Downloaded for Offline listening'
+                  : 'Download Audio (.mp3)'
+              }
               title={
                 !isAuthenticated
                   ? 'Sign in to download audio'
                   : isDownloading
-                    ? 'Downloading audio...'
-                    : 'Download Audio (.mp3)'
+                  ? `Downloading${downloadProgress !== null ? ` ${downloadProgress}%` : '...'}`
+                  : isOfflineDownloaded
+                  ? 'Downloaded for Offline'
+                  : 'Download Audio (.mp3)'
               }
             >
               {isDownloading ? (
-                <span className="vip-download-spinner-sm" />
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '10px', fontWeight: 700 }}>
+                  <span className="vip-download-spinner-sm" />
+                  {downloadProgress !== null ? `${downloadProgress}%` : ''}
+                </span>
+              ) : isOfflineDownloaded ? (
+                <span className="material-symbols-outlined" style={{ fontSize: '20px', color: '#16a34a', fontVariationSettings: "'FILL' 1" }}>
+                  offline_pin
+                </span>
               ) : (
                 <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
                   {!isAuthenticated ? 'lock' : 'download'}

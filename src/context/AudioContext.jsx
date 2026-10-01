@@ -5,6 +5,7 @@ import { useAuth } from './AuthContext';
 import { recordContentActivity } from '../services/activityService';
 import { evaluateContentAccess, getAuthorizedMediaUrl } from '../services/accessControlService';
 import { getUserPreferences, saveUserPreferences } from '../services/userPreferencesService';
+import { getOfflineMediaBlob } from '../services/offlineStorageService';
 
 const AudioContext = createContext();
 
@@ -58,6 +59,7 @@ export const AudioProvider = ({ children }) => {
 
   const audioRef = useRef(null);
   const lastRecordedProgressRef = useRef(0);
+  const activeBlobUrlRef = useRef(null);
 
   // Sync mutable refs so listeners and callbacks always access fresh state without effect re-runs
   const userRef = useRef(user);
@@ -257,13 +259,30 @@ export const AudioProvider = ({ children }) => {
   const playTrack = useCallback(async (sparkOrTrack) => {
     if (!sparkOrTrack) return;
 
-    // Content access authorization check
-    const access = evaluateContentAccess({
-      user: userRef.current,
-      profile: profileRef.current,
-      isVip: isVipRef.current,
-      content: sparkOrTrack
-    });
+    const contentId = String(sparkOrTrack.id || sparkOrTrack.db_id || '');
+
+    // 1. Check local offline storage (IndexedDB) for downloaded media
+    // If user has downloaded this track, play directly from local Blob (works 100% offline!)
+    let offlineBlob = null;
+    if (userRef.current?.id && contentId) {
+      try {
+        offlineBlob = await getOfflineMediaBlob(userRef.current.id, contentId);
+      } catch (offlineErr) {
+        console.warn('[AudioContext] Offline media lookup note:', offlineErr);
+      }
+    }
+
+    const isDownloadedOffline = Boolean(offlineBlob);
+
+    // Content access authorization check (bypass network checks if legitimately stored locally)
+    const access = (isDownloadedOffline || sparkOrTrack.isOffline)
+      ? { allowed: true, status: 'ALLOWED' }
+      : evaluateContentAccess({
+          user: userRef.current,
+          profile: profileRef.current,
+          isVip: isVipRef.current,
+          content: sparkOrTrack
+        });
 
     if (!access.allowed) {
       console.warn('[AudioContext] Playback prevented by access control:', access.status, sparkOrTrack.title);
@@ -278,6 +297,15 @@ export const AudioProvider = ({ children }) => {
     if (!audio) return;
 
     let trackUrl = sparkOrTrack.audioUrl || sparkOrTrack.audio_url;
+
+    if (offlineBlob) {
+      if (activeBlobUrlRef.current) {
+        try { URL.revokeObjectURL(activeBlobUrlRef.current); } catch {}
+      }
+      const blobUrl = URL.createObjectURL(offlineBlob);
+      activeBlobUrlRef.current = blobUrl;
+      trackUrl = blobUrl;
+    }
 
     // Fallback if track doesn't have an explicit audioUrl but matches a published/static audio
     if (!trackUrl && sparkOrTrack.id) {
@@ -297,20 +325,22 @@ export const AudioProvider = ({ children }) => {
       return;
     }
 
-    // Resolve secure signed URL if this is a protected Supabase storage asset
-    try {
-      const authorizedUrl = await getAuthorizedMediaUrl({
-        mediaUrl: trackUrl,
-        user: userRef.current,
-        profile: profileRef.current,
-        isVip: isVipRef.current,
-        content: sparkOrTrack
-      });
-      if (authorizedUrl) {
-        trackUrl = authorizedUrl;
+    // Resolve secure signed URL only if this is a remote asset (not a local offline Blob)
+    if (!trackUrl.startsWith('blob:') && !trackUrl.startsWith('data:') && !trackUrl.startsWith('/')) {
+      try {
+        const authorizedUrl = await getAuthorizedMediaUrl({
+          mediaUrl: trackUrl,
+          user: userRef.current,
+          profile: profileRef.current,
+          isVip: isVipRef.current,
+          content: sparkOrTrack
+        });
+        if (authorizedUrl) {
+          trackUrl = authorizedUrl;
+        }
+      } catch (err) {
+        console.warn('[AudioContext] Error obtaining signed URL:', err);
       }
-    } catch (err) {
-      console.warn('[AudioContext] Error obtaining signed URL:', err);
     }
 
     const trackId = sparkOrTrack.id || sparkOrTrack.db_id;
