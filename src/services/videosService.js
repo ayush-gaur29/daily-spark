@@ -65,6 +65,8 @@ export const fetchVideos = async ({ isVip = null } = {}) => {
 };
 
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * Fetch a single video by ID.
  */
@@ -81,6 +83,26 @@ export const fetchVideoById = async (id) => {
 
       if (!error && data) {
         return normalizeVideo(data);
+      }
+
+      // Fallback: If id matches a spark ID or spark slug with an attached video
+      const isUuid = UUID_REGEX.test(id);
+      let sparkQuery = supabase
+        .from('sparks')
+        .select('*, videos(*)');
+
+      if (isUuid) {
+        sparkQuery = sparkQuery.eq('id', id);
+      } else {
+        sparkQuery = sparkQuery.eq('slug', id);
+      }
+
+      const { data: sparkData } = await sparkQuery.maybeSingle();
+      if (sparkData?.videos) {
+        return normalizeVideo({
+          ...sparkData.videos,
+          spark_id: sparkData.id
+        });
       }
     } catch (err) {
       console.warn('[VideosService] fetchVideoById exception:', err);

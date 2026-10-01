@@ -129,24 +129,77 @@ export const Saved = ({
   };
 
   const handleRowClick = (item) => {
-    if (item.contentType === 'video' || item.type === 'video') {
-      const vidId = item.dbId || item.id;
+    // 1. Sparks / Wisdom Reflections
+    if (item.contentType === 'spark') {
+      const sparkIdentifier = item.slug || item.id || item.dbId;
+      if (onNavigateToSpark && sparkIdentifier) {
+        onNavigateToSpark(sparkIdentifier);
+      } else if (sparkIdentifier) {
+        window.location.hash = `#/spark/${sparkIdentifier}`;
+      }
+      return;
+    }
+
+    // 2. Video Lessons
+    if (item.contentType === 'video') {
+      const vidId = item.videoId || item.dbId || item.id;
       if (onNavigateToVideo && vidId) {
         onNavigateToVideo(vidId);
       } else if (vidId) {
         window.location.hash = `#/videos/${vidId}`;
       }
-    } else if (item.contentType === 'audio') {
-      const audId = item.dbId || item.id;
+      return;
+    }
+
+    // 3. Audio Tracks
+    if (item.contentType === 'audio') {
+      const audId = item.audioId || item.dbId || item.id;
       if (onNavigateToAudio && audId) {
         onNavigateToAudio(audId);
       } else if (audId) {
         window.location.hash = `#/audios/${audId}`;
       }
-    } else if (item.type === 'quote') {
-      openShare(item.raw || item);
-    } else {
-      onNavigateToSpark(item.id);
+      return;
+    }
+
+    // 4. Standalone quotes
+    if (item.type === 'quote') {
+      const sparkIdentifier = item.sparkId || item.raw?.spark_id || item.slug || item.id;
+      if (onNavigateToSpark && sparkIdentifier) {
+        onNavigateToSpark(sparkIdentifier);
+      } else {
+        openShare(item.raw || item);
+      }
+      return;
+    }
+
+    // 5. Fallback for legacy items without explicit contentType
+    if (item.type === 'video') {
+      const vidId = item.videoId || item.raw?.videos?.id || item.raw?.video_id || item.dbId || item.id;
+      if (onNavigateToVideo && vidId) {
+        onNavigateToVideo(vidId);
+      } else if (vidId) {
+        window.location.hash = `#/videos/${vidId}`;
+      }
+      return;
+    }
+
+    if (item.type === 'audio') {
+      const audId = item.audioId || item.raw?.audios?.id || item.raw?.audio_id || item.dbId || item.id;
+      if (onNavigateToAudio && audId) {
+        onNavigateToAudio(audId);
+      } else if (audId) {
+        window.location.hash = `#/audios/${audId}`;
+      }
+      return;
+    }
+
+    // Fallback default to spark navigation
+    const fallbackId = item.slug || item.id || item.dbId;
+    if (onNavigateToSpark && fallbackId) {
+      onNavigateToSpark(fallbackId);
+    } else if (fallbackId) {
+      window.location.hash = `#/spark/${fallbackId}`;
     }
   };
 

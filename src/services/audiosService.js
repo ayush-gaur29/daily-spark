@@ -77,6 +77,8 @@ export const fetchAudios = async ({ isVip = null } = {}) => {
   }
 };
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * Fetch a single audio track by ID.
  */
@@ -93,6 +95,26 @@ export const fetchAudioById = async (id) => {
 
       if (!error && data) {
         return normalizeAudio(data);
+      }
+
+      // Fallback: If id matches a spark ID or spark slug with an attached audio
+      const isUuid = UUID_REGEX.test(id);
+      let sparkQuery = supabase
+        .from('sparks')
+        .select('*, audios(*)');
+
+      if (isUuid) {
+        sparkQuery = sparkQuery.eq('id', id);
+      } else {
+        sparkQuery = sparkQuery.eq('slug', id);
+      }
+
+      const { data: sparkData } = await sparkQuery.maybeSingle();
+      if (sparkData?.audios) {
+        return normalizeAudio({
+          ...sparkData.audios,
+          spark_id: sparkData.id
+        });
       }
     } catch (err) {
       console.warn('[AudiosService] fetchAudioById exception:', err);
